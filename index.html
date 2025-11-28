@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bura O'yini Hisoblagichi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Komanda sonini tanlash ekrani -->
+    <div id="teamSelection" class="screen active">
+        <div class="container">
+            <h1>Komanda sonini tanlang</h1>
+            <div class="button-group">
+                <button class="team-btn" onclick="startGame(2)">2 Komanda</button>
+                <button class="team-btn" onclick="startGame(3)">3 Komanda</button>
+                <button class="team-btn" onclick="startGame(4)">4 Komanda</button>
+                <button class="team-btn" onclick="startGame(5)">5 Komanda</button>
+                <button class="team-btn" onclick="startGame(6)">6 Komanda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hisoblagich ekrani -->
+    <div id="scoreScreen" class="screen">
+        <div class="container">
+            <div class="exit-container">
+                <button class="exit-btn" onclick="exitToMain()">⟸ Chiqish</button>
+            </div>
+            <div id="teamsContainer" class="teams-container"></div>
+        </div>
+    </div>
+
+    <!-- G'olib ekrani -->
+    <div id="winnerScreen" class="screen">
+        <div class="container winner-container">
+            <div class="exit-container">
+                <button class="exit-btn" onclick="exitToMain()">⟸ Chiqish</button>
+            </div>
+            <div id="winnerAnimation" class="winner-animation">
+                <h1 id="winnerText" class="winner-text"></h1>
+                <p class="winner-subtitle">CHEMPION!</p>
+            </div>
+            <button class="new-game-btn" onclick="newGame()">Yangi O'yin</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

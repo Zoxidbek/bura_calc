@@ -1,0 +1,369 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    max-width: 800px;
+    width: 100%;
+}
+
+/* Komanda tanlash tugmalari */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.team-btn {
+    padding: 16px 30px;
+    font-size: 1.1em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.team-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.team-btn:active {
+    transform: translateY(0);
+}
+
+/* Komanda kartalari */
+.teams-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.team-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.team-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.team-card.eliminated {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.6;
+}
+
+.team-card.eliminated .team-name,
+.team-card.eliminated .team-score {
+    color: #6c757d;
+}
+
+.team-info {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.team-name {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.team-name:hover {
+    background-color: #e9ecef;
+}
+
+.team-score {
+    font-size: 2em;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.team-card.eliminated .team-score {
+    color: #6c757d;
+}
+
+.score-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3em;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.minus-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.minus-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.minus-btn:disabled {
+    background: #dee2e6;
+    cursor: not-allowed;
+}
+
+.plus-btn {
+    background: #28a745;
+    color: white;
+}
+
+.plus-btn:hover {
+    background: #218838;
+}
+
+.plus-btn:disabled {
+    background: #dee2e6;
+    cursor: not-allowed;
+}
+
+/* Chiqish tugmasi */
+.exit-container {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.exit-btn {
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.exit-btn:hover {
+    background: #5a6268;
+}
+
+/* G'olib ekrani */
+.winner-container {
+    text-align: center;
+    background: white;
+}
+
+.winner-text {
+    font-size: 2.2em;
+    color: #495057;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.winner-subtitle {
+    font-size: 1.5em;
+    color: #28a745;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.new-game-btn {
+    padding: 14px 36px;
+    font-size: 1.1em;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+
+.new-game-btn:hover {
+    background: #5a6fd8;
+}
+
+/* Modal oynasi */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-content h3 {
+    margin-bottom: 16px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    border: 2px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+
+.modal-content input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.save-btn {
+    background: #667eea;
+    color: white;
+}
+
+.save-btn:hover {
+    background: #5a6fd8;
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #5a6268;
+}
+
+/* Sarlavha va matnlar */
+h1 {
+    text-align: center;
+    color: #495057;
+    margin-bottom: 24px;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+/* Mobil moslashuv */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5em;
+    }
+    
+    .team-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .score-controls {
+        display: flex;
+        gap: 16px;
+    }
+    
+    .winner-text {
+        font-size: 1.8em;
+    }
+    
+    .exit-container {
+        text-align: center;
+    }
+    
+    .teams-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 16px;
+    }
+    
+    .team-btn {
+        padding: 14px 20px;
+        font-size: 1em;
+    }
+    
+    .team-card {
+        padding: 16px;
+    }
+}
