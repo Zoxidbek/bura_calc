@@ -27,6 +27,24 @@
             <div class="exit-container">
                 <button class="exit-btn" onclick="exitToMain()">⟸ Chiqish</button>
             </div>
+            <!-- Kozir kartalari (faqat belgi, hisobga ta'sir qilmaydi) -->
+            <div class="suit-bar">
+                <div class="suit-cards">
+                    <button class="suit-card black" data-suit="clubs" aria-label="Chillak">
+                        <span class="sc-corner">A<br>♣</span><span class="sc-center">♣</span>
+                    </button>
+                    <button class="suit-card red" data-suit="hearts" aria-label="Chervi">
+                        <span class="sc-corner">A<br>♥</span><span class="sc-center">♥</span>
+                    </button>
+                    <button class="suit-card black" data-suit="spades" aria-label="Pika">
+                        <span class="sc-corner">A<br>♠</span><span class="sc-center">♠</span>
+                    </button>
+                    <button class="suit-card red" data-suit="diamonds" aria-label="G'isht">
+                        <span class="sc-corner">A<br>♦</span><span class="sc-center">♦</span>
+                    </button>
+                </div>
+                <div id="suitLabel" class="suit-label">Kozirni tanlang</div>
+            </div>
             <div id="teamsContainer" class="teams-container"></div>
         </div>
     </div>
@@ -37,11 +55,17 @@
             <div class="exit-container">
                 <button class="exit-btn" onclick="exitToMain()">⟸ Chiqish</button>
             </div>
+            <div class="winner-rays" aria-hidden="true"></div>
             <div id="winnerAnimation" class="winner-animation">
+                <div class="trophy" aria-hidden="true">🏆</div>
+                <div class="winner-suits" aria-hidden="true">
+                    <span>♣</span><span class="red">♥</span><span>♠</span><span class="red">♦</span>
+                </div>
                 <h1 id="winnerText" class="winner-text"></h1>
                 <p class="winner-subtitle">CHEMPION!</p>
             </div>
             <button class="new-game-btn" onclick="newGame()">Yangi O'yin</button>
+            <button id="soundBtn" class="sound-btn" onclick="toggleWinnerSound()" aria-label="Ovoz">🔊</button>
         </div>
     </div>
 
