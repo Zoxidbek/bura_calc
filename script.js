@@ -248,7 +248,7 @@ function setSuit(suit) {
     });
     const label = document.getElementById('suitLabel');
     if (label) {
-        label.textContent = suit ? 'Kozir: ' + SUIT_NAMES[suit] : 'Kozirni tanlang';
+        label.textContent = suit ? 'Kozir: ' + SUIT_NAMES[suit] + " · o'zgartirish uchun bosing" : 'Kozirni tanlang';
         label.classList.toggle('active', !!suit);
         label.classList.toggle('red', suit === 'hearts' || suit === 'diamonds');
     }
