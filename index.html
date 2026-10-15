@@ -91,7 +91,17 @@
                 <button class="new-game-btn" onclick="newGame()">Yangi O'yin</button>
                 <button class="rematch-btn" onclick="rematch()">🔁 Shu komandalar bilan qayta</button>
             </div>
-            <button id="soundBtn" class="sound-btn" onclick="toggleWinnerSound()" aria-label="Ovoz">🔊</button>
+            <div id="musicPlayer" class="music-player">
+                <button id="soundBtn" class="mp-btn" onclick="toggleWinnerSound()"
+                        aria-label="Ovozni o'chirish" title="Ovoz">🔊</button>
+                <div class="mp-info">
+                    <div class="mp-title">♪ G'olib qahramon kelmoqda</div>
+                    <div class="mp-sub">Handel · See, the Conquering Hero Comes!</div>
+                    <div class="mp-bar"><div id="musicProgress" class="mp-fill"></div></div>
+                </div>
+                <button class="mp-btn mp-replay" onclick="replayWinnerMusic()"
+                        aria-label="Musiqani qayta qo'yish" title="Qayta qo'yish">↻</button>
+            </div>
         </div>
     </div>
 
