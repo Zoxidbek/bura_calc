@@ -10,6 +10,8 @@
     <!-- Komanda sonini tanlash ekrani -->
     <div id="teamSelection" class="screen active">
         <div class="container">
+            <!-- Tugallanmagan o'yin (bo'lsa) -->
+            <div id="resumeCard"></div>
             <h1>Komanda sonini tanlang</h1>
             <div class="button-group">
                 <button class="team-btn" onclick="startGame(2)">2 Komanda</button>
@@ -18,6 +20,27 @@
                 <button class="team-btn" onclick="startGame(5)">5 Komanda</button>
                 <button class="team-btn" onclick="startGame(6)">6 Komanda</button>
             </div>
+            <div class="home-links">
+                <button class="link-btn" onclick="openStats('history')">
+                    📜 Tarix <span id="historyCount" class="count-badge"></span>
+                </button>
+                <button class="link-btn" onclick="openStats('ranking')">🏆 Reyting</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarix va reyting ekrani -->
+    <div id="statsScreen" class="screen">
+        <div class="container">
+            <div class="exit-container">
+                <button class="exit-btn" onclick="showScreen('teamSelection')">⟸ Orqaga</button>
+            </div>
+            <div class="tabs" role="tablist">
+                <button class="tab-btn" role="tab" data-tab="history" onclick="switchStatsTab('history')">📜 Tarix</button>
+                <button class="tab-btn" role="tab" data-tab="ranking" onclick="switchStatsTab('ranking')">🏆 Reyting</button>
+            </div>
+            <div id="historyPanel" class="stats-panel" role="tabpanel"></div>
+            <div id="rankingPanel" class="stats-panel" role="tabpanel" hidden></div>
         </div>
     </div>
 
@@ -64,7 +87,10 @@
                 <h1 id="winnerText" class="winner-text"></h1>
                 <p class="winner-subtitle">CHEMPION!</p>
             </div>
-            <button class="new-game-btn" onclick="newGame()">Yangi O'yin</button>
+            <div class="winner-actions">
+                <button class="new-game-btn" onclick="newGame()">Yangi O'yin</button>
+                <button class="rematch-btn" onclick="rematch()">🔁 Shu komandalar bilan qayta</button>
+            </div>
             <button id="soundBtn" class="sound-btn" onclick="toggleWinnerSound()" aria-label="Ovoz">🔊</button>
         </div>
     </div>

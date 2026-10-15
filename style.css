@@ -16,6 +16,8 @@
     --minus-dark: #b93a2f;
     --card-red: #d02a2a;
     --card-black: #1b1b1b;
+    --gold-soft: #fbf1d3;
+    --gold-text: #8a5f00;
 }
 
 * {
@@ -395,6 +397,7 @@ body {
 }
 
 .winner-animation,
+.winner-actions,
 .new-game-btn,
 .sound-btn {
     position: relative;
@@ -613,6 +616,452 @@ h1 {
     font-size: 1.8em;
     font-weight: 600;
 }
+
+/* G'olib ekrani: tugmalar */
+.winner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.rematch-btn {
+    padding: 12px 22px;
+    font-size: 1.05em;
+    background: #fff;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.15s;
+    animation: riseIn 0.5s ease 0.8s both;
+}
+
+.rematch-btn:hover { background: #eef7f2; }
+.rematch-btn:active { transform: scale(0.97); }
+
+/* Komanda chiplari (tarix va davom ettirish kartasida) */
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line);
+    font-size: 0.88em;
+    color: var(--text);
+}
+
+.chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip b {
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.chip.out { color: var(--muted); }
+.chip.out b { color: var(--muted); font-weight: 600; }
+
+.chip.win {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    font-weight: 700;
+}
+
+.chip.win b { color: var(--gold-text); }
+
+/* Bosh sahifa: davom ettirish kartasi */
+.resume-card {
+    border: 2px solid var(--gold);
+    background: #fdf8ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    animation: riseIn 0.4s ease both;
+}
+
+.resume-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.resume-title {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.resume-time {
+    color: var(--muted);
+    font-size: 0.82em;
+    white-space: nowrap;
+}
+
+.resume-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.resume-btn {
+    flex: 1;
+    padding: 13px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.05em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.resume-btn:hover { background: var(--primary-dark); }
+.resume-btn:active { transform: scale(0.98); }
+
+.icon-btn {
+    width: 46px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 1em;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--minus);
+    border-color: var(--minus);
+    background: #fdf0ee;
+}
+
+/* Bosh sahifa: Tarix / Reyting tugmalari */
+.home-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+}
+
+.link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 10px;
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    animation: riseIn 0.45s ease 0.24s both;
+}
+
+.link-btn:hover {
+    border-color: var(--gold);
+    box-shadow: 0 2px 10px rgba(201, 154, 43, 0.18);
+}
+
+.link-btn:active { transform: scale(0.98); }
+
+.count-badge {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 2px 8px;
+    min-width: 22px;
+}
+
+.count-badge:empty { display: none; }
+
+/* Tarix / Reyting yorliqlari */
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.tab-btn {
+    padding: 10px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.tab-btn.active {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Tarix */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px 14px;
+    animation: riseIn 0.35s ease both;
+}
+
+.history-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-date {
+    font-size: 0.85em;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.del-btn {
+    width: 32px;
+    height: 32px;
+    margin-right: -6px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+
+.del-btn:hover {
+    color: var(--minus);
+    background: #fbeceb;
+}
+
+.history-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.history-meta {
+    font-size: 0.82em;
+    color: var(--muted);
+}
+
+.start-btn {
+    padding: 10px 18px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.start-btn:hover { background: var(--primary-dark); }
+.start-btn:active { transform: scale(0.97); }
+
+.clear-btn {
+    display: block;
+    margin: 18px auto 0;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--minus);
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.clear-btn:hover { background: #fbeceb; }
+
+/* Reyting */
+.rank-head,
+.rank-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 58px 44px 50px;
+    align-items: center;
+    gap: 4px;
+}
+
+.rank-head {
+    padding: 0 12px 6px;
+    font-size: 0.68em;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.rank-head span:nth-child(n+3) { text-align: center; }
+
+.rank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rank-row {
+    padding: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    animation: riseIn 0.35s ease both;
+}
+
+.rank-row.top {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+}
+
+.rank-pos {
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: 800;
+    color: var(--muted);
+}
+
+.rank-name {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank-num {
+    text-align: center;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rank-wins { color: var(--gold-text); font-size: 1.1em; }
+.rank-pct { color: var(--muted); font-weight: 600; }
+
+.rank-note {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--muted);
+}
+
+/* Bo'sh holat */
+.empty-state {
+    text-align: center;
+    padding: 34px 12px;
+    color: var(--muted);
+}
+
+.empty-icon {
+    font-size: 2.4em;
+    margin-bottom: 8px;
+}
+
+.empty-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+/* Nom tavsiyalari */
+.suggest-label {
+    margin: -6px 0 8px;
+    font-size: 0.78em;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 132px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+.suggest-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.suggest-chip small {
+    color: var(--gold-text);
+    font-weight: 700;
+}
+
+.suggest-chip:hover {
+    border-color: var(--gold);
+    background: #fdf8ea;
+}
+
+.suggest-chip:active { transform: scale(0.96); }
+
+/* Tasdiqlash oynasi */
+.modal-text {
+    margin: -6px 0 18px;
+    color: var(--muted);
+    font-size: 0.95em;
+}
+
+.danger-btn {
+    background: var(--minus);
+    color: #fff;
+}
+
+.danger-btn:hover { background: var(--minus-dark); }
 
 /* Animatsiyalar */
 @keyframes screenIn {
