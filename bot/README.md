@@ -22,8 +22,9 @@ esa har bir o'yinchiga bot orqali keladi. O'yin qoidalari asl kalkulyator bilan 
 
 **Admin** (`ADMIN_IDS` dagi foydalanuvchi; panelga kirish uchun `.env` dagi `ADMIN_CODE` so'raladi):
 - Botda `/admin` → kod → menyu: 🎵 Musiqalar, 📊 Statistika, 👥 Foydalanuvchilar, 🎮 O'yinlar.
-- **Musiqa qo'shish — Mini App'siz:** botga audio fayl yuborasiz → «Faol qilish», «Tinglash»,
-  «Boshlanish vaqti» (masalan, naqoratdan), «Nomi», «O'chirish».
+- **Musiqa qo'shish — Mini App'siz:** botga audio fayl yuborasiz → bot darhol **qaysi soniyadan
+  boshlansin** deb so'raydi (`45`, `1:05`, `1 daqiqa 5 soniya` yoki «Boshidan») — g'olib ekranida
+  musiqa aynan shu joyidan chalinadi. Keyin: «Faol qilish», «Tinglash», «Boshlanish vaqti», «Nomi», «O'chirish».
 - Mini App'dagi Admin bo'limi: umumiy statistika, barcha foydalanuvchilar, o'yinlarni bekor
   qilish/o'chirish, g'olib musiqasini tanlash. Kod bir marta kiritilsa, bot va Mini App'da
   `ADMIN_SESSION_HOURS` soat ochiq turadi.

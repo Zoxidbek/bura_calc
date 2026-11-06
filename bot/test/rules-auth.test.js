@@ -76,6 +76,15 @@ test('yordamchilar va sozlamalar', () => {
     assert.equal(parseTimeInput('1:05'), 65);
     assert.equal(parseTimeInput('1:75'), null);
     assert.equal(parseTimeInput('abc'), null);
+    assert.equal(parseTimeInput('bir daqiqa'), null);
+    assert.equal(parseTimeInput('0'), 0);
+    assert.equal(parseTimeInput('45 soniya'), 45);
+    assert.equal(parseTimeInput('45s'), 45);
+    assert.equal(parseTimeInput('1.05'), 65);
+    assert.equal(parseTimeInput('1:05 dan'), 65);
+    assert.equal(parseTimeInput('2 daqiqa'), 120);
+    assert.equal(parseTimeInput('1 daqiqa 5 soniya'), 65);
+    assert.equal(parseTimeInput('1 daq 30'), 90);
     assert.equal(formatDuration(125), '2:05');
     assert.throws(() => loadConfig({}), /BOT_TOKEN/);
     const c = loadConfig({ BOT_TOKEN: 't', MONGODB_URI: 'm', ADMIN_IDS: '1, 2', ADMIN_CODE: '1234', RENDER_EXTERNAL_URL: 'https://x.onrender.com/' });

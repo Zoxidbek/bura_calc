@@ -180,7 +180,7 @@ export function musicList(items, activeId) {
             : [t.performer, formatDuration(t.duration), t.startAt ? `${formatDuration(t.startAt)} dan` : ''].filter(Boolean).join(' · ');
         lines.push(`${on ? '✅' : '▫️'} ${i + 1}. <b>${h(t.title)}</b>${meta ? ` — ${h(meta)}` : ''}`);
     });
-    lines.push('', "➕ <b>Yangi qo'shish:</b> shu chatga audio fayl yuboring (20 MB gacha, MP3 tavsiya).");
+    lines.push('', "➕ <b>Yangi qo'shish:</b> shu chatga audio fayl yuboring (20 MB gacha, MP3 tavsiya) — bot qaysi soniyadan boshlanishini so'raydi.");
     return lines.join('\n');
 }
 

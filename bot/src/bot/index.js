@@ -1,6 +1,6 @@
 import { InlineKeyboard, Keyboard } from 'grammy';
 import * as texts from '../texts.js';
-import { parseTimeInput, formatWhen } from '../util.js';
+import { parseTimeInput, formatWhen, formatDuration, escapeHtml } from '../util.js';
 
 const BTN = { stats: '📊 Statistikam', top: '🏆 Reyting', help: 'ℹ️ Yordam', admin: '🛡 Admin panel' };
 const PER_PAGE = 8;
@@ -260,6 +260,24 @@ export function attachBot(bot, { services, config, adminGuard }) {
         return { text: texts.trackCard(t), keyboard: kb };
     }
 
+    /** Musiqa qaysi soniyadan boshlanishini so'raydi (javobni matnli xabar sifatida kutadi). */
+    async function askStart(ctx, track, head = '') {
+        const id = String(track._id);
+        await users.setPending(ctx.from.id, { type: 'trackStart', id });
+        const lines = [
+            head,
+            `🎵 <b>${escapeHtml(track.title)}</b>${track.duration ? ` · ${formatDuration(track.duration)}` : ''}${track.startAt ? ` · hozir ${formatDuration(track.startAt)} dan` : ''}`,
+            '',
+            "⏱ <b>G'olib ekranida musiqa qaysi soniyadan boshlansin?</b>",
+            'Soniyani yozing: <code>45</code>, <code>1:05</code> yoki <code>1 daqiqa 5 soniya</code>.',
+            "Boshidan bo'lsa — pastdagi tugmani bosing. Bekor qilish: /cancel"
+        ].filter((l, i) => i !== 0 || l);
+        return ctx.reply(lines.join('\n'), {
+            parse_mode: 'HTML',
+            reply_markup: new InlineKeyboard().text('▶️ Boshidan (0:00)', `a:tstart0:${id}`)
+        });
+    }
+
     async function playTrack(ctx, id) {
         const t = await music.get(id);
         const caption = `🎵 ${t.title}${t.startAt ? ` · Mini App'da ${Math.floor(t.startAt / 60)}:${String(t.startAt % 60).padStart(2, '0')} dan boshlanadi` : ''}`;
@@ -323,11 +341,14 @@ export function attachBot(bot, { services, config, adminGuard }) {
                     await playTrack(ctx, a1);
                     break;
                 case 'tstart':
-                    await music.get(a1);
-                    await users.setPending(ctx.from.id, { type: 'trackStart', id: a1 });
                     await answer();
-                    await ctx.reply("⏱ G'olib ekranida musiqa nechanchi soniyadan boshlansin?\nMasalan: <code>45</code> yoki <code>1:05</code>. Boshidan: <code>0</code>. Bekor qilish: /cancel",
-                        { parse_mode: 'HTML', reply_markup: { force_reply: true, input_field_placeholder: '0:45' } });
+                    await askStart(ctx, await music.get(a1));
+                    break;
+                case 'tstart0':
+                    await music.update(a1, { startAt: 0 });
+                    await users.setPending(ctx.from.id, null);
+                    await answer({ text: '▶️ Musiqa boshidan chalinadi' });
+                    await show(ctx, await trackView(a1), true);
                     break;
                 case 'ttitle':
                     await music.get(a1);
@@ -391,8 +412,7 @@ export function attachBot(bot, { services, config, adminGuard }) {
             size: file.file_size || 0,
             addedBy: ctx.from.id
         });
-        await ctx.reply(duplicate ? "ℹ️ Bu musiqa ro'yxatda allaqachon bor." : "✅ Musiqa qo'shildi! «Faol qilish» tugmasi bilan g'olib musiqasiga aylantiring.");
-        await show(ctx, await trackView(String(track._id)));
+        await askStart(ctx, track, duplicate ? "ℹ️ Bu musiqa ro'yxatda allaqachon bor." : "✅ <b>Musiqa qo'shildi!</b>");
     });
 
     // ---------- Matnli javoblar (kod, vaqt, nom) ----------
@@ -407,21 +427,24 @@ export function attachBot(bot, { services, config, adminGuard }) {
                     await users.setPending(ctx.from.id, null);
                     return askCode(ctx);
                 }
+                let done;
                 try {
                     if (p.type === 'trackStart') {
                         const sec = parseTimeInput(ctx.message.text);
                         if (sec === null) {
-                            return ctx.reply("⏱ Vaqtni soniyada (masalan, 45) yoki daqiqa:soniya (1:05) ko'rinishida yuboring. Bekor qilish: /cancel");
+                            return ctx.reply("⏱ Vaqtni tushunmadim. Soniyada (masalan, 45) yoki daqiqa:soniya (1:05) ko'rinishida yuboring. Bekor qilish: /cancel");
                         }
                         await music.update(p.id, { startAt: sec });
+                        done = sec ? `✅ Musiqa g'olib ekranida <b>${formatDuration(sec)}</b> dan boshlanadi.` : '✅ Musiqa boshidan chalinadi.';
                     } else {
                         await music.update(p.id, { title: ctx.message.text });
+                        done = '✅ Nomi saqlandi.';
                     }
                 } catch (err) {
-                    return ctx.reply(`⚠️ ${err.message}`);
+                    return ctx.reply(`⚠️ ${err.message}. Boshqa vaqt yuboring yoki /cancel`);
                 }
                 await users.setPending(ctx.from.id, null);
-                await ctx.reply('✅ Saqlandi.', { reply_markup: mainKeyboard(true) });
+                await ctx.reply(done, { parse_mode: 'HTML', reply_markup: mainKeyboard(true) });
                 return show(ctx, await trackView(p.id));
             }
         }

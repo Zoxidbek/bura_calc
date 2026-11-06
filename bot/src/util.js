@@ -38,14 +38,25 @@ export function formatDuration(sec) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** "45", "1:05", "01:05" → soniya; noto'g'ri bo'lsa null. */
+/** "45", "45 soniya", "1:05", "1.05", "2 daqiqa", "1 daqiqa 5 soniya" → soniya; tushunarsiz bo'lsa null. */
 export function parseTimeInput(text) {
-    const t = String(text ?? '').trim();
-    let m = /^(\d{1,4})$/.exec(t);
-    if (m) return parseInt(m[1], 10);
-    m = /^(\d{1,3})[:.](\d{1,2})$/.exec(t);
-    if (m && parseInt(m[2], 10) < 60) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-    return null;
+    const t = String(text ?? '').toLowerCase().trim();
+    let m = /^(\d{1,3})\s*[:.]\s*(\d{1,2})$/.exec(t) || /(\d{1,3})\s*:\s*(\d{1,2})/.exec(t);
+    if (m) {
+        const sec = parseInt(m[2], 10);
+        return sec < 60 ? parseInt(m[1], 10) * 60 + sec : null;
+    }
+    const min = /(\d{1,3})\s*(?:daqiqa|daq|minut|min)/.exec(t);
+    const sec = /(\d{1,4})\s*(?:soniya|sekund|sek|son|s\b)/.exec(t);
+    if (min || sec) {
+        if (min && !sec) {
+            const rest = /(\d{1,2})/.exec(t.slice(min.index + min[0].length));
+            return parseInt(min[1], 10) * 60 + (rest ? parseInt(rest[1], 10) : 0);
+        }
+        return (min ? parseInt(min[1], 10) * 60 : 0) + (sec ? parseInt(sec[1], 10) : 0);
+    }
+    m = /^(\d{1,4})$/.exec(t);
+    return m ? parseInt(m[1], 10) : null;
 }
 
 const TZ = process.env.TZ_DISPLAY || 'Asia/Tashkent';

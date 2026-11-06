@@ -76,10 +76,33 @@ test("admin: botga audio yuborib musiqa qo'shish, tanlash, tinglash, vaqt va nom
     await h.message(admin, null, { audio: { file_id: 'AUDIO_9', file_unique_id: 'UQ9', duration: 200, title: 'Galaba qoshigi', performer: 'Ijrochi', mime_type: 'audio/mpeg', file_size: 2048 } });
     const track = await h.db.tracks.findOne({ fileUniqueId: 'UQ9' });
     assert.ok(track, "musiqa bazaga yozildi");
-    const card = lastTo(admin.id);
-    assert.match(card.params.text, /Galaba qoshigi/);
     const id = String(track._id);
+
+    // yuklangan zahoti: qaysi soniyadan boshlansin?
+    const ask = lastTo(admin.id);
+    assert.match(ask.params.text, /Musiqa qo'shildi/);
+    assert.match(ask.params.text, /qaysi soniyadan boshlansin/);
+    assert.match(ask.params.text, /Galaba qoshigi<\/b> · 3:20/);
+    assert.ok(buttons(ask.params.reply_markup).some(b => b.callback_data === `a:tstart0:${id}`), "«Boshidan» tugmasi");
+    await h.message(admin, '45 soniya');
+    assert.equal((await h.db.tracks.findOne({ _id: track._id })).startAt, 45);
+    const saved = sent().filter(c => c.params.chat_id === admin.id).slice(-2);
+    assert.match(saved[0].params.text, /<b>0:45<\/b> dan boshlanadi/);
+    const card = saved[1];
+    assert.match(card.params.text, /Galaba qoshigi/);
+    assert.match(card.params.text, /0:45 dan boshlanadi/);
     assert.ok(buttons(card.params.reply_markup).some(b => b.callback_data === `a:tact:${id}`));
+
+    // musiqa uzunligidan katta vaqt — rad etiladi, so'rov davom etadi
+    await h.callback(admin, `a:tstart:${id}`);
+    assert.match(lastTo(admin.id).params.text, /hozir 0:45 dan/);
+    await h.message(admin, '9:00');
+    assert.match(lastTo(admin.id).params.text, /uzunligidan/);
+    // «Boshidan» tugmasi
+    await h.callback(admin, `a:tstart0:${id}`);
+    assert.equal((await h.db.tracks.findOne({ _id: track._id })).startAt, 0);
+    assert.match(h.tg.last('answerCallbackQuery').params.text, /boshidan/);
+    assert.equal((await h.db.users.findOne({ tgId: admin.id })).pending, undefined, "kutish holati tozalandi");
 
     // takror yuborilsa — ikki marta qo'shilmaydi
     await h.message(admin, null, { audio: { file_id: 'AUDIO_9b', file_unique_id: 'UQ9', duration: 200, mime_type: 'audio/mpeg', file_size: 2048 } });
@@ -102,9 +125,9 @@ test("admin: botga audio yuborib musiqa qo'shish, tanlash, tinglash, vaqt va nom
     assert.equal(h.tg.last('sendAudio').params.audio, 'AUDIO_9');
 
     await h.callback(admin, `a:tstart:${id}`);
-    assert.match(lastTo(admin.id).params.text, /nechanchi soniyadan/);
+    assert.match(lastTo(admin.id).params.text, /qaysi soniyadan boshlansin/);
     await h.message(admin, 'bir daqiqa');
-    assert.match(lastTo(admin.id).params.text, /soniyada/);
+    assert.match(lastTo(admin.id).params.text, /tushunmadim/);
     await h.message(admin, '1:05');
     assert.equal((await h.db.tracks.findOne({ _id: track._id })).startAt, 65);
 
