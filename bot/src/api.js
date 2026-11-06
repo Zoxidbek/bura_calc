@@ -71,8 +71,15 @@ export function createApi({ services, adminGuard, config, getBotInfo }) {
             adminUntil: req.adminUnlocked ? req.me.adminUntil : null,
             music: await music.publicActive(),
             startParam: req.startParam,
+            canMessage: !!req.me.canMessage,
             bot: getBotInfo()?.username || null
         });
+    });
+
+    // Mini App ichida "Xabar yuborishga ruxsat" berilgach (requestWriteAccess)
+    r.post('/me/can-message', async (req, res) => {
+        await users.setCanMessage(req.me.tgId, true);
+        res.json({ ok: true });
     });
 
     r.get('/users', async (req, res) => {

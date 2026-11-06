@@ -1,0 +1,26 @@
+# Render Blueprint: Dashboard → New → Blueprint → shu repo.
+# Bot, API va Mini App bitta web xizmatda ishlaydi (kod: bot/ papkasi).
+services:
+  - type: web
+    name: bura-bot
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: bot
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: BOT_TOKEN          # @BotFather bergan token
+        sync: false
+      - key: MONGODB_URI        # MongoDB Atlas ulanish satri
+        sync: false
+      - key: ADMIN_IDS          # sizning Telegram ID raqamingiz (bir nechta bo'lsa vergul bilan)
+        sync: false
+      - key: ADMIN_CODE         # admin panelga kirish kodi
+        sync: false
+      - key: WEBHOOK_SECRET
+        generateValue: true
