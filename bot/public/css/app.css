@@ -1,0 +1,1972 @@
+:root {
+    --felt-1: #13573f;
+    --felt-2: #0b3426;
+    --gold: #e2b74a;
+    --gold-dark: #c99a2b;
+    --surface: #fffdf8;
+    --surface-2: #f5f2ea;
+    --line: #e6e0d2;
+    --text: #23302a;
+    --muted: #6f7a73;
+    --primary: #167a55;
+    --primary-dark: #0f6043;
+    --plus: #2f9e62;
+    --plus-dark: #24834f;
+    --minus: #d9483b;
+    --minus-dark: #b93a2f;
+    --card-red: #d02a2a;
+    --card-black: #1b1b1b;
+    --gold-soft: #fbf1d3;
+    --gold-text: #8a5f00;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background:
+        radial-gradient(ellipse at 50% 20%, rgba(255,255,255,0.08), transparent 60%),
+        linear-gradient(135deg, var(--felt-1) 0%, var(--felt-2) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+    color: var(--text);
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    animation: screenIn 0.4s ease both;
+}
+
+.container {
+    background: var(--surface);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(226,183,74,0.25);
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+}
+
+/* Komanda tanlash tugmalari */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.team-btn {
+    padding: 16px 30px;
+    font-size: 1.1em;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    animation: riseIn 0.45s ease both;
+}
+
+.team-btn:nth-child(1) { animation-delay: 0.04s; }
+.team-btn:nth-child(2) { animation-delay: 0.08s; }
+.team-btn:nth-child(3) { animation-delay: 0.12s; }
+.team-btn:nth-child(4) { animation-delay: 0.16s; }
+.team-btn:nth-child(5) { animation-delay: 0.20s; }
+
+.team-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22,122,85,0.3), inset 0 -2px 0 var(--gold);
+}
+
+.team-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Kozir kartalari */
+.suit-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.suit-cards {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 600px;
+}
+
+.suit-card {
+    position: relative;
+    width: 50px;
+    height: 70px;
+    margin: 0 5px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #ddd6c6;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    cursor: pointer;
+    font-family: Georgia, 'Times New Roman', serif;
+    transition: width 0.35s ease, height 0.35s ease, margin 0.35s ease, transform 0.35s ease,
+                box-shadow 0.25s ease, opacity 0.3s ease, border-width 0.35s ease;
+    animation: dealIn 0.5s cubic-bezier(.2,.8,.3,1.2) backwards;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.suit-card:nth-child(1) { animation-delay: 0.05s; }
+.suit-card:nth-child(2) { animation-delay: 0.12s; }
+.suit-card:nth-child(3) { animation-delay: 0.19s; }
+.suit-card:nth-child(4) { animation-delay: 0.26s; }
+
+.suit-card.red { color: var(--card-red); }
+.suit-card.black { color: var(--card-black); }
+
+.sc-corner {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-size: 12px;
+    line-height: 1;
+    text-align: center;
+    transition: font-size 0.35s ease, top 0.35s ease, left 0.35s ease;
+}
+
+.sc-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    padding-top: 6px;
+    transition: font-size 0.35s ease;
+}
+
+.suit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+}
+
+/* Tanlangan kozir — katta bo'lib ko'rinadi */
+.suit-card.selected {
+    width: 92px;
+    height: 128px;
+    border-radius: 10px;
+    border-color: var(--gold);
+    overflow: visible;
+    box-shadow: 0 0 0 3px var(--gold), 0 10px 22px rgba(201,154,43,0.45);
+}
+
+.suit-card.selected .sc-corner {
+    font-size: 20px;
+    top: 7px;
+    left: 9px;
+}
+
+.suit-card.selected .sc-center {
+    font-size: 52px;
+}
+
+.suit-card.selected:hover {
+    transform: translateY(-3px);
+}
+
+.suit-card.selected::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 12px;
+    box-shadow: 0 0 18px 3px rgba(226,183,74,0.7);
+    animation: glowPulse 1.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Qolgan kartalar yashirinadi */
+.suit-card.dimmed {
+    width: 0;
+    margin: 0;
+    border-width: 0;
+    opacity: 0;
+    transform: scale(0.4);
+    pointer-events: none;
+}
+
+.suit-card.flip {
+    animation: cardFlip 0.5s ease;
+}
+
+.suit-label {
+    font-size: 0.85em;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+}
+
+.suit-label.active { color: var(--card-black); }
+.suit-label.active.red { color: var(--card-red); }
+
+/* Komanda kartalari */
+.teams-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.team-card {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.team-card.card-enter {
+    animation: riseIn 0.45s ease both;
+}
+
+.team-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 2px 10px rgba(201, 154, 43, 0.18);
+}
+
+.team-card.eliminated {
+    background: #f1efe9;
+    border-color: #ddd8cc;
+    opacity: 0.6;
+}
+
+.team-card.just-eliminated {
+    animation: shake 0.5s ease, fadeOutHalf 0.6s ease 0.5s both;
+}
+
+.team-card.eliminated .team-name,
+.team-card.eliminated .team-score {
+    color: var(--muted);
+}
+
+.team-info {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.team-name {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.team-name:hover {
+    background-color: #ebe6d9;
+}
+
+.team-score {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--primary);
+    display: inline-block;
+}
+
+.team-score.pop-up { animation: popUp 0.4s ease; }
+.team-score.pop-down { animation: popDown 0.4s ease; }
+
+.team-card.eliminated .team-score {
+    color: var(--muted);
+}
+
+.score-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3em;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.score-btn:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.minus-btn {
+    background: var(--minus);
+    color: white;
+}
+
+.minus-btn:hover:not(:disabled) {
+    background: var(--minus-dark);
+}
+
+.minus-btn:disabled {
+    background: #ddd8cc;
+    cursor: not-allowed;
+}
+
+.plus-btn {
+    background: var(--plus);
+    color: white;
+}
+
+.plus-btn:hover:not(:disabled) {
+    background: var(--plus-dark);
+}
+
+.plus-btn:disabled {
+    background: #ddd8cc;
+    cursor: not-allowed;
+}
+
+/* Chiqish tugmasi */
+.exit-container {
+    text-align: left;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.exit-btn {
+    padding: 10px 20px;
+    background: #5f6b64;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.exit-btn:hover {
+    background: #4c5650;
+}
+
+.exit-btn:active {
+    transform: scale(0.97);
+}
+
+/* G'olib ekrani */
+.winner-container {
+    text-align: center;
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.winner-rays {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 900px;
+    height: 900px;
+    margin: -450px 0 0 -450px;
+    background: repeating-conic-gradient(rgba(226,183,74,0.13) 0deg 10deg, transparent 10deg 20deg);
+    border-radius: 50%;
+    animation: spin 18s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 65%);
+            mask-image: radial-gradient(circle, #000 20%, transparent 65%);
+}
+
+.winner-animation,
+.winner-actions,
+.new-game-btn,
+.music-player {
+    position: relative;
+    z-index: 1;
+}
+
+.trophy {
+    font-size: 4.2em;
+    line-height: 1;
+    margin-bottom: 8px;
+    display: inline-block;
+    animation: trophyIn 0.8s cubic-bezier(.2,.9,.3,1.4) both, float 2.6s ease-in-out 0.8s infinite;
+    filter: drop-shadow(0 6px 10px rgba(201,154,43,0.45));
+}
+
+.winner-suits {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    font-size: 1.6em;
+    margin-bottom: 10px;
+    font-family: Georgia, serif;
+    color: var(--card-black);
+}
+
+.winner-suits .red { color: var(--card-red); }
+
+.winner-suits span {
+    display: inline-block;
+    animation: suitBounce 1.2s ease-in-out infinite;
+}
+
+.winner-suits span:nth-child(2) { animation-delay: 0.15s; }
+.winner-suits span:nth-child(3) { animation-delay: 0.3s; }
+.winner-suits span:nth-child(4) { animation-delay: 0.45s; }
+
+.winner-text {
+    font-size: 2.2em;
+    color: var(--text);
+    margin-bottom: 16px;
+    font-weight: 600;
+    animation: zoomIn 0.6s cubic-bezier(.2,.9,.3,1.3) 0.2s both;
+}
+
+.winner-subtitle {
+    font-size: 1.5em;
+    margin-bottom: 24px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, #9a6b00, #e8b730, #9a6b00);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    animation: zoomIn 0.6s ease 0.45s both, shimmer 2.4s linear 1s infinite;
+}
+
+.new-game-btn {
+    padding: 14px 36px;
+    font-size: 1.1em;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+    font-weight: 500;
+    animation: riseIn 0.5s ease 0.7s both;
+}
+
+.new-game-btn:hover {
+    background: var(--primary-dark);
+}
+
+.new-game-btn:active {
+    transform: scale(0.97);
+}
+
+/* G'olib musiqasi pleyeri */
+.music-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 380px;
+    margin: 18px auto 0;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    text-align: left;
+    animation: riseIn 0.5s ease 0.9s both;
+}
+
+.mp-btn {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface-2);
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.mp-btn:hover { background: #ebe6d9; }
+.mp-btn:active { transform: scale(0.92); }
+
+.mp-replay {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    font-size: 1.35em;
+    font-weight: 700;
+}
+
+.mp-replay:hover { background: var(--primary-dark); }
+
+.music-player.ended .mp-replay {
+    animation: replayPulse 1.6s ease-in-out infinite;
+}
+
+.mp-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mp-sub {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mp-title {
+    font-size: 0.92em;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text);
+}
+
+.mp-sub {
+    font-size: 0.74em;
+    color: var(--muted);
+}
+
+.mp-bar {
+    height: 4px;
+    margin-top: 7px;
+    border-radius: 2px;
+    background: var(--line);
+    overflow: hidden;
+}
+
+.mp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    transform: scaleX(0);
+    transform-origin: left center;
+}
+
+.music-player.playing .mp-title::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: var(--plus);
+    animation: glowPulse 1s ease-in-out infinite;
+}
+
+/* Konfetti va bayram effektlari */
+.confetti {
+    position: fixed;
+    top: -20px;
+    z-index: 900;
+    border-radius: 2px;
+    pointer-events: none;
+    animation: confettiFall 3s linear forwards;
+}
+
+.falling-suit {
+    position: fixed;
+    top: -50px;
+    z-index: 900;
+    pointer-events: none;
+    font-family: Georgia, serif;
+    animation: suitFall 4s ease-in forwards;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+.falling-suit.red { color: #ff4d4d; }
+.falling-suit.black { color: #ffffff; }
+.falling-suit.gold { color: var(--gold); }
+
+.fireworks-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 950;
+}
+
+/* Modal oynasi */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--surface);
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    animation: zoomIn 0.25s ease;
+}
+
+.modal-content h3 {
+    margin-bottom: 16px;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    border: 2px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+    background: #fff;
+}
+
+.modal-content input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.save-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.save-btn:hover {
+    background: var(--primary-dark);
+}
+
+.cancel-btn {
+    background: #5f6b64;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #4c5650;
+}
+
+/* Sarlavha va matnlar */
+h1 {
+    text-align: center;
+    color: var(--text);
+    margin-bottom: 24px;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+/* G'olib ekrani: tugmalar */
+.winner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.rematch-btn {
+    padding: 12px 22px;
+    font-size: 1.05em;
+    background: #fff;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.15s;
+    animation: riseIn 0.5s ease 0.8s both;
+}
+
+.rematch-btn:hover { background: #eef7f2; }
+.rematch-btn:active { transform: scale(0.97); }
+
+/* Komanda chiplari (tarix va davom ettirish kartasida) */
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line);
+    font-size: 0.88em;
+    color: var(--text);
+}
+
+.chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip b {
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.chip.out { color: var(--muted); }
+.chip.out b { color: var(--muted); font-weight: 600; }
+
+.chip.win {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    font-weight: 700;
+}
+
+.chip.win b { color: var(--gold-text); }
+
+/* Bosh sahifa: davom ettirish kartasi */
+.resume-card {
+    border: 2px solid var(--gold);
+    background: #fdf8ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    animation: riseIn 0.4s ease both;
+}
+
+.resume-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.resume-title {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.resume-time {
+    color: var(--muted);
+    font-size: 0.82em;
+    white-space: nowrap;
+}
+
+.resume-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.resume-btn {
+    flex: 1;
+    padding: 13px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.05em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.resume-btn:hover { background: var(--primary-dark); }
+.resume-btn:active { transform: scale(0.98); }
+
+.icon-btn {
+    width: 46px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 1em;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--minus);
+    border-color: var(--minus);
+    background: #fdf0ee;
+}
+
+/* Bosh sahifa: Tarix / Reyting tugmalari */
+.home-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+}
+
+.link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 10px;
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    animation: riseIn 0.45s ease 0.24s both;
+}
+
+.link-btn:hover {
+    border-color: var(--gold);
+    box-shadow: 0 2px 10px rgba(201, 154, 43, 0.18);
+}
+
+.link-btn:active { transform: scale(0.98); }
+
+.count-badge {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 2px 8px;
+    min-width: 22px;
+}
+
+.count-badge:empty { display: none; }
+
+/* Tarix / Reyting yorliqlari */
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.tab-btn {
+    padding: 10px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.tab-btn.active {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Tarix */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px 14px;
+    animation: riseIn 0.35s ease both;
+}
+
+.history-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-date {
+    font-size: 0.85em;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.del-btn {
+    width: 32px;
+    height: 32px;
+    margin-right: -6px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+
+.del-btn:hover {
+    color: var(--minus);
+    background: #fbeceb;
+}
+
+.history-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.history-meta {
+    font-size: 0.82em;
+    color: var(--muted);
+}
+
+.start-btn {
+    padding: 10px 18px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.start-btn:hover { background: var(--primary-dark); }
+.start-btn:active { transform: scale(0.97); }
+
+.clear-btn {
+    display: block;
+    margin: 18px auto 0;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--minus);
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.clear-btn:hover { background: #fbeceb; }
+
+/* Reyting */
+.rank-head,
+.rank-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 58px 44px 50px;
+    align-items: center;
+    gap: 4px;
+}
+
+.rank-head {
+    padding: 0 12px 6px;
+    font-size: 0.68em;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.rank-head span:nth-child(n+3) { text-align: center; }
+
+.rank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rank-row {
+    padding: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    animation: riseIn 0.35s ease both;
+}
+
+.rank-row.top {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+}
+
+.rank-pos {
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: 800;
+    color: var(--muted);
+}
+
+.rank-name {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank-num {
+    text-align: center;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rank-wins { color: var(--gold-text); font-size: 1.1em; }
+.rank-pct { color: var(--muted); font-weight: 600; }
+
+.rank-note {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--muted);
+}
+
+/* Bo'sh holat */
+.empty-state {
+    text-align: center;
+    padding: 34px 12px;
+    color: var(--muted);
+}
+
+.empty-icon {
+    font-size: 2.4em;
+    margin-bottom: 8px;
+}
+
+.empty-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+/* Nom tavsiyalari */
+.suggest-label {
+    margin: -6px 0 8px;
+    font-size: 0.78em;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 132px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+.suggest-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.suggest-chip small {
+    color: var(--gold-text);
+    font-weight: 700;
+}
+
+.suggest-chip:hover {
+    border-color: var(--gold);
+    background: #fdf8ea;
+}
+
+.suggest-chip:active { transform: scale(0.96); }
+
+/* Tasdiqlash oynasi */
+.modal-text {
+    margin: -6px 0 18px;
+    color: var(--muted);
+    font-size: 0.95em;
+}
+
+.danger-btn {
+    background: var(--minus);
+    color: #fff;
+}
+
+.danger-btn:hover { background: var(--minus-dark); }
+
+/* Animatsiyalar */
+@keyframes screenIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes riseIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.6); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dealIn {
+    from { opacity: 0; transform: translateY(-24px) rotate(-12deg); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes cardFlip {
+    0%   { transform: rotateY(0); }
+    50%  { transform: rotateY(90deg) scale(1.08); }
+    100% { transform: rotateY(0); }
+}
+
+@keyframes replayPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22, 122, 85, 0.45); }
+    50%      { box-shadow: 0 0 0 9px rgba(22, 122, 85, 0); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
+@keyframes popUp {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35); color: var(--plus); }
+    100% { transform: scale(1); }
+}
+
+@keyframes popDown {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(0.8); color: var(--minus); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+}
+
+@keyframes fadeOutHalf {
+    from { opacity: 1; }
+    to   { opacity: 0.6; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes trophyIn {
+    from { opacity: 0; transform: translateY(-40px) scale(0.3) rotate(-20deg); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+
+@keyframes suitBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-6px) scale(1.15); }
+}
+
+@keyframes shimmer {
+    to { background-position: 200% center; }
+}
+
+@keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 0.7; }
+}
+
+@keyframes suitFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+    10%  { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0.8; }
+}
+
+/* Mobil moslashuv */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .team-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .score-controls {
+        display: flex;
+        gap: 16px;
+    }
+
+    .winner-text {
+        font-size: 1.8em;
+    }
+
+    .exit-container {
+        text-align: center;
+    }
+
+    .teams-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 16px;
+    }
+
+    .team-btn {
+        padding: 14px 20px;
+        font-size: 1em;
+    }
+
+    .team-card {
+        padding: 16px;
+    }
+
+    .suit-card {
+        width: 46px;
+        height: 64px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* =========================================================
+   TELEGRAM MINI APP — qo'shimcha komponentlar
+   (yuqoridagi asl dizayn o'zgarmagan, faqat kengaytirilgan)
+   ========================================================= */
+
+:root {
+    --safe-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+    --safe-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    padding: calc(14px + var(--safe-top)) 14px calc(14px + var(--safe-bottom));
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+}
+
+.screen.active {
+    min-height: calc(var(--tg-viewport-stable-height, 100vh) - 28px - var(--safe-top) - var(--safe-bottom));
+}
+
+.screen.top { align-items: flex-start; }
+
+.container { margin: 0 auto; }
+.container.center { text-align: center; }
+.container.center h1 { margin: 8px 0 10px; }
+
+.lead { color: var(--muted); margin: 0 0 18px; line-height: 1.45; }
+.lead.small { font-size: 0.9em; text-align: center; margin-top: -10px; }
+
+a.team-btn.link {
+    display: inline-block;
+    text-decoration: none;
+    padding: 14px 24px;
+}
+
+code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.92em;
+}
+
+/* Avatar */
+.avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--av, #2f6fb5);
+    color: #fff;
+    font-weight: 700;
+    overflow: hidden;
+    line-height: 1;
+    user-select: none;
+}
+.avatar img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.avatar.guest { background: #8c958f; }
+.avatar.xs { width: 20px; height: 20px; font-size: 9px; }
+.avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+.avatar.md { width: 38px; height: 38px; font-size: 14px; }
+.avatar.lg { width: 48px; height: 48px; font-size: 17px; }
+
+/* Bosh sahifa sarlavhasi */
+.app-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.head-text { flex: 1; min-width: 0; }
+.head-name { font-weight: 700; font-size: 1.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.head-sub { font-size: 0.84em; color: var(--muted); margin-top: 2px; }
+
+.admin-chip {
+    border: 1.5px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.admin-chip.on { border-color: var(--gold); color: var(--gold-text); background: var(--gold-soft); }
+
+.team-btn.cta {
+    width: 100%;
+    font-size: 1.15em;
+    font-weight: 700;
+    margin-bottom: 16px;
+    box-shadow: inset 0 -3px 0 var(--gold);
+}
+
+.tabs.tabs-3 { grid-template-columns: repeat(3, 1fr); }
+.tabs.tabs-4 { grid-template-columns: repeat(4, 1fr); }
+.tabs .tab-btn { padding: 10px 4px; font-size: 0.88em; }
+
+.tab-body { min-height: 160px; }
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 10px;
+    font-size: 0.8em;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.section-title:first-child { margin-top: 4px; }
+.section-title .count {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 8px;
+    color: var(--text);
+}
+
+.live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e5484d;
+    box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.6);
+    animation: livePulse 1.6s ease-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes livePulse {
+    0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.55); }
+    70% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0); }
+}
+
+.game-list { display: flex; flex-direction: column; gap: 10px; }
+
+.game-card {
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    animation: riseIn 0.35s ease both;
+}
+.game-card:hover { border-color: var(--gold); box-shadow: 0 2px 10px rgba(201, 154, 43, 0.18); }
+.game-card:active { transform: scale(0.99); }
+.game-card.live { border-left: 4px solid #e5484d; }
+
+.gc-top, .gc-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.gc-top { margin-bottom: 8px; }
+.gc-foot { margin-top: 10px; font-size: 0.8em; color: var(--muted); }
+.gc-time { font-size: 0.8em; color: var(--muted); }
+
+.live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78em;
+    font-weight: 800;
+    color: #c4373c;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.edit-hint { color: var(--primary); font-weight: 700; }
+.watch-hint { color: var(--muted); font-weight: 600; }
+
+.empty-mini {
+    text-align: center;
+    padding: 18px 10px;
+    color: var(--muted);
+    font-size: 0.9em;
+    background: var(--surface-2);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+}
+
+.more-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
+}
+.more-btn:disabled { opacity: 0.6; }
+
+.link-mini {
+    border: none;
+    background: transparent;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.9em;
+    padding: 8px 4px;
+    cursor: pointer;
+}
+.danger-mini {
+    border: 1px solid #f0c9c4;
+    background: #fdf0ee;
+    color: var(--minus-dark);
+    font-weight: 700;
+    font-size: 0.85em;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.muted-small { font-size: 0.78em; color: var(--muted); }
+
+.result-badge {
+    font-size: 0.78em;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+.result-badge.won { background: var(--gold-soft); color: var(--gold-text); border: 1px solid var(--gold); }
+.result-badge.lost { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+
+/* Reyting: avatar bilan */
+.rank-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rank-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row.me { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* Statistika plitkalari */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.stat-tile {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+    animation: riseIn 0.35s ease both;
+}
+.stat-tile.gold { background: var(--gold-soft); border-color: var(--gold); }
+.stat-tile.wide { grid-column: 1 / -1; }
+.stat-val { font-size: 1.6em; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.stat-tile.gold .stat-val { color: var(--gold-text); }
+.stat-lbl { font-size: 0.78em; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    background: #eef7f2;
+    border: 1.5px solid #b9dcc9;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 0.88em;
+}
+.notice span { color: var(--muted); }
+
+/* Admin */
+.admin-bar { display: flex; gap: 8px; align-items: stretch; margin-bottom: 14px; }
+.seg {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.seg-btn {
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    padding: 8px 2px;
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+}
+.seg-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+.lock-btn {
+    width: 44px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.05em;
+}
+
+.admin-lock { text-align: center; padding: 18px 6px 6px; }
+.lock-icon { font-size: 2.6em; margin-bottom: 6px; }
+.admin-lock p { color: var(--muted); font-size: 0.9em; margin: 6px 0 16px; }
+.unlock-form { display: flex; gap: 8px; max-width: 360px; margin: 0 auto; }
+.unlock-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    font-size: 1em;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+}
+.unlock-form input:focus { outline: none; border-color: var(--primary); }
+.unlock-form .team-btn { padding: 12px 18px; animation: none; }
+.form-msg { min-height: 1.4em; margin-top: 10px; color: var(--minus-dark); font-weight: 600; font-size: 0.9em; }
+
+.admin-note { font-size: 0.82em; color: var(--muted); margin: 0 0 10px; }
+
+.search-input {
+    width: 100%;
+    padding: 11px 12px;
+    font-size: 0.95em;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #fff;
+}
+.search-input:focus { outline: none; border-color: var(--primary); }
+
+.user-list { display: flex; flex-direction: column; gap: 8px; }
+.user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.ur-main { flex: 1; min-width: 0; }
+.ur-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ur-sub { font-size: 0.76em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ur-stats { text-align: right; font-size: 0.9em; color: var(--muted); }
+.ur-stats b { color: var(--gold-text); font-size: 1.1em; }
+.ur-stats small { display: block; font-size: 0.78em; }
+
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.filter-chip {
+    border: 1.5px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+}
+.filter-chip.active { border-color: var(--primary); color: var(--primary); background: #eef7f2; }
+
+.track-list { display: flex; flex-direction: column; gap: 8px; }
+.track-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.track-row.active { border-color: var(--gold); background: var(--gold-soft); }
+.track-ico { font-size: 1.4em; }
+.track-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.track-main b, .track-main small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-main small { color: var(--muted); font-size: 0.78em; }
+.track-actions { display: flex; gap: 4px; }
+.icon-mini {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.95em;
+}
+.icon-mini.danger:hover { border-color: var(--minus); background: #fdf0ee; }
+.radio {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: 2px solid #b9b2a1;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+}
+.radio.on { border-color: var(--primary); }
+.radio.on::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+/* Yangi o'yin: o'yinchilarni tanlash */
+.builder { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.builder-row {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+}
+.builder.animate .builder-row { animation: riseIn 0.35s ease both; }
+.br-label { font-size: 0.78em; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+.br-members { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.member-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 4px 4px 5px;
+    font-weight: 700;
+    font-size: 0.9em;
+    max-width: 100%;
+}
+.member-chip > span:not(.avatar) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-x {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.75em;
+    flex-shrink: 0;
+}
+.add-member {
+    border: 1.5px dashed #b9b2a1;
+    background: transparent;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-weight: 700;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.92em;
+}
+.add-member.small { padding: 6px 12px; font-size: 0.82em; }
+.team-btn.start { width: 100%; font-size: 1.15em; font-weight: 700; animation: none; }
+
+/* Pastdan chiqadigan panel */
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1100;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.sheet-backdrop.open { opacity: 1; }
+.sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1101;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 8px 14px calc(14px + var(--safe-bottom));
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(.2, .8, .3, 1);
+    max-width: 640px;
+    margin: 0 auto;
+}
+.sheet.open { transform: none; }
+.sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: #d8d1c1; margin: 2px auto 10px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sheet-x { width: 34px; height: 34px; border: none; border-radius: 50%; background: var(--surface-2); cursor: pointer; color: var(--muted); }
+
+.pick-list { overflow-y: auto; flex: 1; min-height: 120px; display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
+.pick-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font: inherit;
+}
+.pick-row:active { background: var(--surface-2); }
+.pick-row:disabled { opacity: 0.55; cursor: not-allowed; }
+.pr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pr-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-name small { color: var(--primary); }
+.pr-sub { font-size: 0.78em; color: var(--muted); }
+.pr-taken { font-size: 0.72em; font-weight: 800; color: var(--gold-text); background: var(--gold-soft); border-radius: 999px; padding: 3px 8px; }
+.guest-add { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.guest-add input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    font-size: 0.95em;
+    background: #fff;
+}
+.guest-add input:focus { outline: none; border-color: var(--primary); }
+.guest-add button {
+    border: none;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor: pointer;
+}
+
+.menu-list { display: flex; flex-direction: column; gap: 8px; }
+.menu-item {
+    text-align: left;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+}
+.menu-item.danger { color: var(--minus-dark); }
+
+.log-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.log-row { display: flex; gap: 10px; font-size: 0.88em; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.log-time { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 44px; }
+.log-main .plus { color: var(--plus-dark); font-weight: 800; }
+.log-main .minus { color: var(--minus-dark); font-weight: 800; }
+
+/* O'yin ekrani */
+.game-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.game-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+}
+.game-status.live { color: #c4373c; border-color: #f0c9c4; background: #fdf3f2; }
+.menu-btn { width: 40px; height: 40px; font-size: 1.2em; font-weight: 700; }
+
+.team-avatars { display: flex; justify-content: center; margin-bottom: 6px; }
+.team-avatars .avatar + .avatar { margin-left: -8px; box-shadow: 0 0 0 2px var(--surface-2); }
+.team-card .team-name { cursor: default; }
+.team-card .team-name:hover { background: transparent; }
+.container.viewer .score-btn { display: none; }
+.suit-bar.readonly .suit-card { cursor: default; }
+.suit-bar.readonly .suit-card:hover { transform: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.suit-bar.readonly .suit-card.selected:hover { transform: none; }
+.suit-card:disabled { opacity: 1; color: inherit; }
+.suit-card.red:disabled { color: var(--card-red); }
+.suit-card.black:disabled { color: var(--card-black); }
+
+.game-foot { margin-top: 18px; text-align: center; font-size: 0.86em; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+
+/* G'olib ekrani */
+.winner-avatars { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; animation: zoomIn 0.6s ease 0.15s both; }
+.winner-avatars .avatar { box-shadow: 0 0 0 3px var(--gold), 0 6px 14px rgba(201, 154, 43, 0.35); }
+.final-scores { justify-content: center; margin: -6px 0 20px; position: relative; z-index: 1; animation: riseIn 0.5s ease 0.6s both; }
+.finish-meta { margin-top: 12px; position: relative; z-index: 1; }
+.music-player.blocked .mp-replay { animation: replayPulse 1.2s ease-in-out infinite; }
+.music-player.playing .mp-title::after { content: none; display: none; }
+.mp-note { display: inline-block; color: var(--primary); }
+.music-player.playing .mp-note { animation: notePulse 0.9s ease-in-out infinite; }
+@keyframes notePulse {
+    0%, 100% { transform: none; }
+    50% { transform: translateY(-3px) scale(1.25); }
+}
+
+/* Holatlar */
+.loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 30px 10px; color: var(--muted); font-weight: 600; }
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--line);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.error-block { text-align: center; padding: 24px 10px; color: var(--muted); }
+.error-block .more-btn { max-width: 240px; margin: 12px auto 0; }
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    max-width: min(92vw, 420px);
+    background: #23302a;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 2000;
+    text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.error { background: var(--minus-dark); }
+.toast.warn { background: #8a5f00; }
+
+@media (max-width: 480px) {
+    body { padding-left: 10px; padding-right: 10px; }
+    .container { padding: 16px; margin: 0; }
+    .tabs .tab-btn { font-size: 0.8em; }
+    .seg-btn { font-size: 0.74em; }
+    .rank-head, .rank-row { grid-template-columns: 30px minmax(0, 1fr) 54px 38px 44px; }
+    .track-row.file { flex-wrap: wrap; }
+    .track-row.file .track-actions { flex-basis: 100%; justify-content: flex-end; }
+}
