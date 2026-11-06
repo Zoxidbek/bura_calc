@@ -59,6 +59,46 @@ export function parseTimeInput(text) {
     return m ? parseInt(m[1], 10) : null;
 }
 
+// Tartib muhim: "month" "m" (daqiqa) dan oldin tekshiriladi
+const DURATION_UNITS = [
+    [/^(oy|month)/, 43200],
+    [/^(hafta|week|w$)/, 10080],
+    [/^(kun|day|d$|k$)/, 1440],
+    [/^(soat|soa|hour|h$|s$)/, 60],
+    [/^(daqiqa|daq|minut|min|m$)/, 1]
+];
+
+/**
+ * Ban muddati: "2 soat", "3 kun", "1 hafta", "30 daqiqa", "1 oy" (+ ixtiyoriy sabab).
+ * Birliksiz son — soat. Natija: { minutes, reason } yoki null. Eng ko'pi 365 kun.
+ */
+export function parseDuration(text) {
+    const raw = String(text ?? '').trim();
+    const m = /^(\d{1,4})\s*([a-zA-Zʻ'’]*)\s*[-—–:,.]?\s*([\s\S]*)$/.exec(raw);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    let unit = 60;
+    let reason = m[3];
+    const word = m[2].toLowerCase();
+    if (word) {
+        const found = DURATION_UNITS.find(([rx]) => rx.test(word));
+        if (found) unit = found[1];
+        else reason = `${m[2]} ${m[3]}`;
+    }
+    const minutes = n * unit;
+    if (!minutes || minutes > 525600) return null;
+    return { minutes, reason: cleanName(reason, 200) || null };
+}
+
+/** 90 → "1 soat 30 daqiqa", 4320 → "3 kun" */
+export function formatMinutes(min) {
+    const m = Math.max(0, Math.round(min));
+    const d = Math.floor(m / 1440);
+    const hh = Math.floor((m % 1440) / 60);
+    const mm = m % 60;
+    return [d && `${d} kun`, hh && `${hh} soat`, mm && `${mm} daqiqa`].filter(Boolean).join(' ') || '0 daqiqa';
+}
+
 const TZ = process.env.TZ_DISPLAY || 'Asia/Tashkent';
 
 function parts(date) {

@@ -1,9 +1,10 @@
 import { InlineKeyboard, Keyboard } from 'grammy';
 import * as texts from '../texts.js';
-import { parseTimeInput, formatWhen, formatDuration, escapeHtml } from '../util.js';
+import { parseTimeInput, parseDuration, formatMinutes, formatWhen, formatDuration, escapeHtml } from '../util.js';
 
 const BTN = { stats: '📊 Statistikam', top: '🏆 Reyting', help: 'ℹ️ Yordam', admin: '🛡 Admin panel' };
 const PER_PAGE = 8;
+const BAN_PRESETS = [[60, '1 soat'], [360, '6 soat'], [1440, '1 kun'], [4320, '3 kun'], [10080, '7 kun'], [43200, '30 kun']];
 const MAX_AUDIO = 20 * 1024 * 1024;
 
 const COMMANDS = [
@@ -64,9 +65,20 @@ export function attachBot(bot, { services, config, adminGuard }) {
     }
 
     // Shaxsiy chatdagi har bir foydalanuvchini bazada yangilab boramiz
+    const banReplies = new Map();            // bloklangan userga 1 daqiqada bittadan ko'p javob bermaymiz
     bot.use(async (ctx, next) => {
         if (ctx.from && !ctx.from.is_bot && ctx.chat?.type === 'private') {
-            await users.touch(ctx.from);
+            const u = await users.touch(ctx.from);
+            const ban = users.banInfo(u);
+            if (ban && !isAdminId(ctx.from.id) && !ctx.myChatMember) {
+                if (ctx.callbackQuery) {
+                    await ctx.answerCallbackQuery({ text: `⛔ Siz ${formatWhen(ban.until)} gacha bloklangansiz`, show_alert: true }).catch(() => {});
+                } else if (Date.now() - (banReplies.get(ctx.from.id) || 0) > 60000) {
+                    banReplies.set(ctx.from.id, Date.now());
+                    await ctx.reply(texts.bannedNotice(ban), { parse_mode: 'HTML' });
+                }
+                return;
+            }
         }
         await next();
     });
@@ -187,25 +199,76 @@ export function attachBot(bot, { services, config, adminGuard }) {
         return { text: texts.adminStats({ users: uc, games: gc, top: rows }), keyboard: new InlineKeyboard().text('⬅️ Menyu', 'a:menu') };
     }
 
-    async function usersView(pageNo) {
-        const { items, total } = await users.list({ skip: pageNo * PER_PAGE, limit: PER_PAGE });
+    // Sahifa belgisi: "2" — hammasi, "0.b" — bloklanganlar, "0.s" — o'chirish tavsiyasi
+    function parsePageToken(token) {
+        const [p, f] = String(token || '0').split('.');
+        return { pageNo: Math.max(0, parseInt(p, 10) || 0), filter: f === 'b' || f === 's' ? f : 'all' };
+    }
+
+    async function usersView(token) {
+        const { pageNo, filter } = parsePageToken(token);
+        const suffix = filter === 'all' ? '' : `.${filter}`;
+        const kind = { all: 'all', b: 'banned', s: 'suggest' }[filter];
+        const { items, total } = await users.list({ skip: pageNo * PER_PAGE, limit: PER_PAGE, kind });
         const pages = Math.max(1, Math.ceil(total / PER_PAGE));
         const kb = new InlineKeyboard();
         items.forEach((u, i) => {
-            kb.text(String(pageNo * PER_PAGE + i + 1), `a:user:${u.tgId}:${pageNo}`);
+            kb.text(`${users.banInfo(u) ? '⛔' : ''}${pageNo * PER_PAGE + i + 1}`, `a:user:${u.tgId}:${pageNo}${suffix}`);
             if ((i + 1) % 4 === 0) kb.row();
         });
         kb.row();
-        if (pageNo > 0) kb.text('◀️ Oldingi', `a:users:${pageNo - 1}`);
-        if (pageNo < pages - 1) kb.text('Keyingi ▶️', `a:users:${pageNo + 1}`);
+        if (pageNo > 0) kb.text('◀️ Oldingi', `a:users:${pageNo - 1}${suffix}`);
+        if (pageNo < pages - 1) kb.text('Keyingi ▶️', `a:users:${pageNo + 1}${suffix}`);
+        kb.row()
+            .text(filter === 'all' ? '• Hammasi' : 'Hammasi', 'a:users:0')
+            .text(filter === 'b' ? '• ⛔ Bloklangan' : '⛔ Bloklangan', 'a:users:0.b')
+            .text(filter === 's' ? '• 💡 Tavsiya' : '💡 Tavsiya', 'a:users:0.s');
         kb.row().text('⬅️ Menyu', 'a:menu');
-        return { text: texts.usersPage(items, { page: pageNo, pages, total, perPage: PER_PAGE }), keyboard: kb };
+        return { text: texts.usersPage(items, { page: pageNo, pages, total, perPage: PER_PAGE, filter }), keyboard: kb };
     }
 
-    async function userView(tgId, backPage) {
+    async function userView(tgId, back) {
         const [u, rows] = await Promise.all([users.get(tgId), users.ranking()]);
-        if (!u) return { text: 'Foydalanuvchi topilmadi.', keyboard: new InlineKeyboard().text("⬅️ Ro'yxat", `a:users:${backPage}`) };
-        return { text: texts.userCard(u, users.rankFrom(rows, tgId)), keyboard: new InlineKeyboard().text("⬅️ Ro'yxat", `a:users:${backPage}`) };
+        if (!u) return { text: "Foydalanuvchi topilmadi (o'chirilgan bo'lishi mumkin).", keyboard: new InlineKeyboard().text("⬅️ Ro'yxat", `a:users:${back}`) };
+        const isAdmin = isAdminId(u.tgId);
+        const kb = new InlineKeyboard();
+        if (!isAdmin) {
+            if (users.banInfo(u)) {
+                kb.text('✅ Blokdan chiqarish', `a:unban:${u.tgId}:${back}`).text('⏱ Muddatni o\'zgartirish', `a:banmenu:${u.tgId}:${back}`).row();
+            } else {
+                kb.text('⛔ Vaqtincha bloklash', `a:banmenu:${u.tgId}:${back}`).row();
+            }
+            kb.text("🗑 O'chirish", `a:udel:${u.tgId}:${back}`).row();
+        }
+        kb.text("⬅️ Ro'yxat", `a:users:${back}`);
+        return { text: texts.userCard(u, users.rankFrom(rows, tgId), { isAdmin }), keyboard: kb };
+    }
+
+    async function banMenuView(tgId, back) {
+        const u = await users.get(tgId);
+        if (!u) return { text: 'Foydalanuvchi topilmadi.', keyboard: new InlineKeyboard().text("⬅️ Ro'yxat", `a:users:${back}`) };
+        const kb = new InlineKeyboard();
+        BAN_PRESETS.forEach(([min, label], i) => {
+            kb.text(label, `a:ban:${u.tgId}:${min}:${back}`);
+            if (i % 3 === 2) kb.row();
+        });
+        kb.row().text('✍️ Boshqa muddat (+ sabab)', `a:bancustom:${u.tgId}:${back}`).row().text('⬅️ Orqaga', `a:user:${u.tgId}:${back}`);
+        return {
+            text: `⛔ <b>${escapeHtml(texts.nameOfUser(u))}</b> qancha muddatga bloklansin?\nBloklangan user botdan ham, Mini App'dan ham foydalana olmaydi va o'yinlarga qo'shilmaydi.`,
+            keyboard: kb
+        };
+    }
+
+    async function applyBan(ctx, tgId, minutes, reason, back, edit) {
+        if (isAdminId(tgId)) throw new Error("Adminni bloklab bo'lmaydi");
+        const until = new Date(Date.now() + minutes * 60000);
+        const updated = await users.ban(tgId, { until, reason, by: ctx.from.id });
+        if (!updated) throw new Error('Foydalanuvchi topilmadi');
+        services.notifier.banNotice(updated).catch(() => {});
+        const msg = `⛔ ${formatMinutes(minutes)}ga bloklandi — ${formatWhen(until)} gacha`;
+        if (edit) await ctx.answerCallbackQuery({ text: msg }).catch(() => {});
+        else await ctx.reply(msg, { reply_markup: mainKeyboard(true) });
+        return show(ctx, await userView(tgId, back), edit);
     }
 
     async function gamesView() {
@@ -309,8 +372,42 @@ export function attachBot(bot, { services, config, adminGuard }) {
                     await show(ctx, { text: '🔒 Admin rejimi yopildi. Qayta kirish: /admin', keyboard: undefined }, true);
                     break;
                 case 'stats': await show(ctx, await statsView(), true); break;
-                case 'users': await show(ctx, await usersView(Math.max(0, parseInt(a1, 10) || 0)), true); break;
-                case 'user': await show(ctx, await userView(Number(a1), Number(a2) || 0), true); break;
+                case 'users': await show(ctx, await usersView(a1), true); break;
+                case 'user': await show(ctx, await userView(Number(a1), a2 || '0'), true); break;
+                case 'banmenu': await show(ctx, await banMenuView(Number(a1), a2 || '0'), true); break;
+                case 'ban': {
+                    const [, , id, min, back] = ctx.callbackQuery.data.split(':');
+                    await applyBan(ctx, Number(id), Math.max(1, parseInt(min, 10) || 60), null, back || '0', true);
+                    answered = true;          // applyBan javobni o'zi berdi
+                    break;
+                }
+                case 'bancustom':
+                    await users.setPending(ctx.from.id, { type: 'banCustom', id: Number(a1), back: a2 || '0' });
+                    await answer();
+                    await ctx.reply("✍️ Muddatni yozing, xohlasangiz sababini ham:\n<code>2 soat</code>, <code>3 kun</code>, <code>1 hafta</code>, <code>30 daqiqa</code>, <code>1 oy</code>\nMasalan: <code>3 kun — o'yinni buzdi</code>. Bekor qilish: /cancel",
+                        { parse_mode: 'HTML', reply_markup: { force_reply: true, input_field_placeholder: '3 kun — sabab' } });
+                    break;
+                case 'unban': {
+                    const before = await users.get(Number(a1));
+                    const updated = await users.unban(Number(a1));
+                    if (users.banInfo(before)) services.notifier.unbanNotice(updated).catch(() => {});
+                    await answer({ text: '✅ Blokdan chiqarildi' });
+                    await show(ctx, await userView(Number(a1), a2 || '0'), true);
+                    break;
+                }
+                case 'udel': {
+                    const target = await users.get(Number(a1));
+                    if (!target || isAdminId(Number(a1))) { await answer({ text: "O'chirib bo'lmaydi", show_alert: true }); break; }
+                    await show(ctx, confirmView(`🗑 <b>${escapeHtml(texts.nameOfUser(target))}</b> o'chirilsinmi?\nStatistikasi (${target.stats?.games || 0} o'yin) o'chadi, o'yinlar tarixida ismi qoladi. Qayta kirsa — yangi user bo'lib yoziladi.`,
+                        `a:udelok:${a1}:${a2 || '0'}`, `a:user:${a1}:${a2 || '0'}`), true);
+                    break;
+                }
+                case 'udelok':
+                    if (isAdminId(Number(a1))) { await answer({ text: "Adminni o'chirib bo'lmaydi", show_alert: true }); break; }
+                    await users.remove(Number(a1));
+                    await answer({ text: "🗑 Foydalanuvchi o'chirildi" });
+                    await show(ctx, await usersView(a2 || '0'), true);
+                    break;
                 case 'games': await show(ctx, await gamesView(), true); break;
                 case 'game': await show(ctx, await gameView(a1), true); break;
                 case 'gcancel':
@@ -412,7 +509,10 @@ export function attachBot(bot, { services, config, adminGuard }) {
             size: file.file_size || 0,
             addedBy: ctx.from.id
         });
-        await askStart(ctx, track, duplicate ? "ℹ️ Bu musiqa ro'yxatda allaqachon bor." : "✅ <b>Musiqa qo'shildi!</b>");
+        await music.setActive(String(track._id));
+        await askStart(ctx, track, duplicate
+            ? "ℹ️ Bu musiqa ro'yxatda bor edi — endi u <b>g'olib musiqasi</b>."
+            : "✅ <b>Musiqa qo'shildi va g'olib musiqasi qilindi!</b>");
     });
 
     // ---------- Matnli javoblar (kod, vaqt, nom) ----------
@@ -422,6 +522,20 @@ export function attachBot(bot, { services, config, adminGuard }) {
         const p = u?.pending;
         if (p && new Date(p.until) > new Date()) {
             if (p.type === 'code') return handleCode(ctx);
+            if (p.type === 'banCustom') {
+                if (!adminGuard.isUnlocked(u)) {
+                    await users.setPending(ctx.from.id, null);
+                    return askCode(ctx);
+                }
+                const d = parseDuration(ctx.message.text);
+                if (!d) return ctx.reply("⏱ Muddatni tushunmadim. Masalan: 2 soat, 3 kun, 1 hafta (365 kungacha). Bekor qilish: /cancel");
+                await users.setPending(ctx.from.id, null);
+                try {
+                    return await applyBan(ctx, p.id, d.minutes, d.reason, p.back || '0', false);
+                } catch (err) {
+                    return ctx.reply(`⚠️ ${err.message}`);
+                }
+            }
             if (p.type === 'trackStart' || p.type === 'trackTitle') {
                 if (!adminGuard.isUnlocked(u)) {
                     await users.setPending(ctx.from.id, null);

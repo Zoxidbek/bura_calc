@@ -33,5 +33,20 @@ export function createNotifier({ users, config, telegram }) {
         return { sent };
     }
 
-    return { sendResults };
+    async function notify(user, text) {
+        if (!user?.canMessage) return false;
+        try {
+            await telegram.sendMessage(user.tgId, text, { parse_mode: 'HTML' });
+            return true;
+        } catch (err) {
+            if (err?.error_code === 403) await users.setCanMessage(user.tgId, false);
+            else console.error('[notify]', user.tgId, err?.description || err?.message);
+            return false;
+        }
+    }
+
+    const banNotice = user => notify(user, texts.banApplied(user.ban));
+    const unbanNotice = user => notify(user, texts.unbanApplied());
+
+    return { sendResults, banNotice, unbanNotice };
 }

@@ -1,6 +1,20 @@
 import { escapeRegex, userName, percent } from '../util.js';
 
 const TOUCH_TTL_MS = 5 * 60 * 1000;
+const SUGGEST_INACTIVE_DAYS = 30;          // shuncha kun kirmagan va o'ynamagan user o'chirishga tavsiya etiladi
+
+/** Amaldagi ban (muddati o'tmagan bo'lsa) yoki null. */
+export function banInfo(u) {
+    if (!u?.ban?.until) return null;
+    const until = new Date(u.ban.until);
+    if (!(until > new Date())) return null;
+    return { until, reason: u.ban.reason || null, at: u.ban.at || null, by: u.ban.by || null };
+}
+
+export function suggestDelete(u) {
+    const cutoff = Date.now() - SUGGEST_INACTIVE_DAYS * 86400000;
+    return (u.stats?.games || 0) === 0 && (!u.lastSeenAt || new Date(u.lastSeenAt).getTime() < cutoff);
+}
 
 export function createUserService({ db }) {
     const { users } = db;
@@ -79,14 +93,21 @@ export function createUserService({ db }) {
         return users.find(filter).sort({ 'stats.games': -1, lastSeenAt: -1 }).limit(limit).toArray();
     }
 
-    async function list({ skip = 0, limit = 20, q = '' } = {}) {
-        let filter = {};
+    async function list({ skip = 0, limit = 20, q = '', kind = 'all' } = {}) {
+        const parts = [];
         const text = String(q || '').trim().slice(0, 40);
         if (text) {
             const rx = { $regex: escapeRegex(text.replace(/^@/, '')), $options: 'i' };
-            filter = { $or: [{ firstName: rx }, { lastName: rx }, { username: rx }] };
-            if (/^\d{3,}$/.test(text)) filter.$or.push({ tgId: Number(text) });
+            const or = [{ firstName: rx }, { lastName: rx }, { username: rx }];
+            if (/^\d{3,}$/.test(text)) or.push({ tgId: Number(text) });
+            parts.push({ $or: or });
         }
+        if (kind === 'banned') parts.push({ 'ban.until': { $gt: new Date() } });
+        if (kind === 'suggest') {
+            parts.push({ 'stats.games': { $lte: 0 } });
+            parts.push({ lastSeenAt: { $lt: new Date(Date.now() - SUGGEST_INACTIVE_DAYS * 86400000) } });
+        }
+        const filter = parts.length > 1 ? { $and: parts } : (parts[0] || {});
         const [items, total] = await Promise.all([
             users.find(filter).sort({ lastSeenAt: -1 }).skip(skip).limit(limit).toArray(),
             users.countDocuments(filter)
@@ -105,6 +126,27 @@ export function createUserService({ db }) {
             ? { $set: { pending: { ...pending, until: new Date(Date.now() + 10 * 60 * 1000) } } }
             : { $unset: { pending: '' } };
         await users.updateOne({ tgId: Number(tgId) }, update);
+    }
+
+    async function ban(tgId, { until, reason = null, by = null }) {
+        forget(tgId);
+        return users.findOneAndUpdate(
+            { tgId: Number(tgId) },
+            { $set: { ban: { until, reason: reason || null, by, at: new Date() } } },
+            { returnDocument: 'after' }
+        );
+    }
+
+    async function unban(tgId) {
+        forget(tgId);
+        return users.findOneAndUpdate({ tgId: Number(tgId) }, { $unset: { ban: '' } }, { returnDocument: 'after' });
+    }
+
+    /** Userni bazadan o'chiradi (o'yinlar tarixida ismi qoladi). Qaytib kirsa — yangi user bo'lib yoziladi. */
+    async function remove(tgId) {
+        forget(tgId);
+        const r = await users.deleteOne({ tgId: Number(tgId) });
+        return r.deletedCount > 0;
     }
 
     async function setAdminUntil(tgId, until) {
@@ -138,13 +180,14 @@ export function createUserService({ db }) {
 
     async function counts() {
         const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
-        const [total, messageable, activeDay, players] = await Promise.all([
+        const [total, messageable, activeDay, players, banned] = await Promise.all([
             users.countDocuments({}),
             users.countDocuments({ canMessage: true }),
             users.countDocuments({ lastSeenAt: { $gte: dayAgo } }),
-            users.countDocuments({ 'stats.games': { $gt: 0 } })
+            users.countDocuments({ 'stats.games': { $gt: 0 } }),
+            users.countDocuments({ 'ban.until': { $gt: new Date() } })
         ]);
-        return { total, messageable, activeDay, players };
+        return { total, messageable, activeDay, players, banned };
     }
 
     /** Mini App va boshqa foydalanuvchilarga ko'rsatiladigan qism (maxfiy maydonlarsiz). */
@@ -160,6 +203,7 @@ export function createUserService({ db }) {
                 losses: u.stats?.losses || 0,
                 rate: percent(u.stats?.wins || 0, u.stats?.games || 0)
             },
+            banned: !!banInfo(u),
             ...(rankInfo ? { rank: rankInfo.rank } : {})
         };
     }
@@ -172,12 +216,15 @@ export function createUserService({ db }) {
             startedAt: u.startedAt || null,
             createdAt: u.createdAt || null,
             lastSeenAt: u.lastSeenAt || null,
-            lastGameAt: u.lastGameAt || null
+            lastGameAt: u.lastGameAt || null,
+            ban: banInfo(u),
+            suggestDelete: suggestDelete(u)
         };
     }
 
     return {
         upsertFromTelegram, touch, forget, get, getMany, search, list,
-        setCanMessage, setPending, setAdminUntil, ranking, rankFrom, counts, toPublic, toAdmin
+        setCanMessage, setPending, setAdminUntil, ban, unban, remove, banInfo, suggestDelete,
+        ranking, rankFrom, counts, toPublic, toAdmin
     };
 }

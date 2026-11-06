@@ -80,7 +80,8 @@ test("admin: botga audio yuborib musiqa qo'shish, tanlash, tinglash, vaqt va nom
 
     // yuklangan zahoti: qaysi soniyadan boshlansin?
     const ask = lastTo(admin.id);
-    assert.match(ask.params.text, /Musiqa qo'shildi/);
+    assert.match(ask.params.text, /Musiqa qo'shildi va g'olib musiqasi qilindi/);
+    assert.equal((await h.api(ali, '/music/active')).body.music.id, id, "yuklangan zahoti faol");
     assert.match(ask.params.text, /qaysi soniyadan boshlansin/);
     assert.match(ask.params.text, /Galaba qoshigi<\/b> · 3:20/);
     assert.ok(buttons(ask.params.reply_markup).some(b => b.callback_data === `a:tstart0:${id}`), "«Boshidan» tugmasi");
@@ -91,7 +92,7 @@ test("admin: botga audio yuborib musiqa qo'shish, tanlash, tinglash, vaqt va nom
     const card = saved[1];
     assert.match(card.params.text, /Galaba qoshigi/);
     assert.match(card.params.text, /0:45 dan boshlanadi/);
-    assert.ok(buttons(card.params.reply_markup).some(b => b.callback_data === `a:tact:${id}`));
+    assert.match(card.params.text, /Hozir faol/);
 
     // musiqa uzunligidan katta vaqt — rad etiladi, so'rov davom etadi
     await h.callback(admin, `a:tstart:${id}`);
@@ -114,8 +115,11 @@ test("admin: botga audio yuborib musiqa qo'shish, tanlash, tinglash, vaqt va nom
 
     await h.callback(admin, 'a:music');
     assert.match(lastEdit().params.text, /G'olib musiqalari/);
-    assert.match(lastEdit().params.text, /✅ 1\. <b>G'olib qahramon kelmoqda<\/b>/);
+    assert.match(lastEdit().params.text, /▫️ 1\. <b>G'olib qahramon kelmoqda<\/b>/);
+    assert.match(lastEdit().params.text, /✅ 2\. <b>Galaba qoshigi<\/b>/, "yangi qo'shiq faol");
 
+    await h.callback(admin, 'a:tact:builtin');
+    assert.equal((await h.api(ali, '/music/active')).body.music.type, 'builtin');
     await h.callback(admin, `a:tact:${id}`);
     assert.match(h.tg.last('answerCallbackQuery').params.text, /Faol musiqa/);
     const act = await h.api(ali, '/music/active');

@@ -188,8 +188,10 @@ test('admin panel: kod bilan ochiladi, musiqa va statistika boshqaruvi', async (
     assert.equal(tracks.body.items.length, 2);
     const track = tracks.body.items[1];
     assert.equal(track.title, 'Chempionlar');
-    assert.equal(tracks.body.activeId, 'builtin');
+    assert.equal(tracks.body.activeId, track.id, "botga yuklangan qo'shiq darhol faol bo'ladi");
 
+    tracks = await h.api(admin, '/admin/tracks/active', { method: 'POST', body: { id: 'builtin' } });
+    assert.equal(tracks.body.activeId, 'builtin');
     tracks = await h.api(admin, '/admin/tracks/active', { method: 'POST', body: { id: track.id } });
     assert.equal(tracks.body.activeId, track.id);
     const active = await h.api(ali, '/music/active');

@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { validateInitData } from './auth.js';
-import { HttpError } from './util.js';
+import { HttpError, formatWhen } from './util.js';
 
 const member = z.union([
     z.object({ tgId: z.number().int().positive() }).strict(),
@@ -13,6 +13,7 @@ const schemas = {
     suit: z.object({ suit: z.enum(['clubs', 'hearts', 'spades', 'diamonds']).nullable() }),
     code: z.object({ code: z.string().max(200) }),
     trackPatch: z.object({ title: z.string().trim().min(1).max(80).optional(), startAt: z.number().int().min(0).max(36000).optional() }),
+    ban: z.object({ minutes: z.number().int().min(1).max(525600), reason: z.string().trim().max(200).optional() }),
     active: z.object({ id: z.string().min(1).max(40) })
 };
 
@@ -28,7 +29,7 @@ function page(query, maxLimit = 50) {
  * Admin bo'limi: ADMIN_IDS + .env dagi ADMIN_CODE bilan ochilgan sessiya (bot bilan umumiy).
  */
 export function createApi({ services, adminGuard, config, getBotInfo }) {
-    const { users, games, music } = services;
+    const { users, games, music, notifier } = services;
     const r = express.Router();
     r.use(express.json({ limit: '32kb' }));
 
@@ -57,6 +58,10 @@ export function createApi({ services, adminGuard, config, getBotInfo }) {
         req.startParam = data.startParam;
         req.isAdmin = adminGuard.isAdminId(req.me.tgId);
         req.adminUnlocked = adminGuard.isUnlocked(req.me);
+        const ban = users.banInfo(req.me);
+        if (ban && !req.isAdmin) {
+            throw new HttpError(403, `Siz ${formatWhen(ban.until)} gacha bloklangansiz`, { code: 'banned', until: ban.until, reason: ban.reason });
+        }
         next();
     });
 
@@ -203,11 +208,45 @@ export function createApi({ services, adminGuard, config, getBotInfo }) {
         });
     });
 
+    const adminRow = (u, ranks) => ({ ...users.toAdmin(u), rank: ranks.get(u.tgId) || null, isAdmin: adminGuard.isAdminId(u.tgId) });
+    const rankMap = async () => new Map((await users.ranking()).map(x => [x.user.tgId, x.rank]));
+
     r.get('/admin/users', async (req, res) => {
         const { skip, limit } = page(req.query);
-        const [{ items, total }, rows] = await Promise.all([users.list({ skip, limit, q: req.query.q }), users.ranking()]);
-        const ranks = new Map(rows.map(x => [x.user.tgId, x.rank]));
-        res.json({ total, items: items.map(u => ({ ...users.toAdmin(u), rank: ranks.get(u.tgId) || null })) });
+        const kind = ['banned', 'suggest'].includes(req.query.kind) ? req.query.kind : 'all';
+        const [{ items, total }, ranks] = await Promise.all([users.list({ skip, limit, q: req.query.q, kind }), rankMap()]);
+        res.json({ total, items: items.map(u => adminRow(u, ranks)) });
+    });
+
+    async function targetUser(req) {
+        const id = Number(req.params.id);
+        const u = Number.isSafeInteger(id) ? await users.get(id) : null;
+        if (!u) throw new HttpError(404, 'Foydalanuvchi topilmadi');
+        if (adminGuard.isAdminId(u.tgId)) throw new HttpError(400, "Adminni bloklab yoki o'chirib bo'lmaydi");
+        return u;
+    }
+
+    // Vaqtinchalik ban (muddat — daqiqada) va ixtiyoriy sabab
+    r.post('/admin/users/:id/ban', async (req, res) => {
+        const u = await targetUser(req);
+        const b = schemas.ban.parse(req.body);
+        const updated = await users.ban(u.tgId, { until: new Date(Date.now() + b.minutes * 60000), reason: b.reason || null, by: req.me.tgId });
+        notifier.banNotice(updated).catch(() => {});
+        res.json({ user: adminRow(updated, await rankMap()) });
+    });
+
+    // Muddatidan oldin blokdan chiqarish
+    r.post('/admin/users/:id/unban', async (req, res) => {
+        const u = await targetUser(req);
+        const updated = await users.unban(u.tgId);
+        if (users.banInfo(u)) notifier.unbanNotice(updated).catch(() => {});
+        res.json({ user: adminRow(updated, await rankMap()) });
+    });
+
+    r.delete('/admin/users/:id', async (req, res) => {
+        const u = await targetUser(req);
+        await users.remove(u.tgId);
+        res.json({ ok: true });
     });
 
     r.get('/admin/games', async (req, res) => {
@@ -258,6 +297,7 @@ export function createApi({ services, adminGuard, config, getBotInfo }) {
             return res.status(400).json({ error: "So'rov noto'g'ri" });
         }
         if (err instanceof HttpError) {
+            if (err.status >= 500) console.error('[api]', req.method, req.originalUrl, err.message);
             const body = { error: err.message };
             for (const [k, v] of Object.entries(err.extra || {})) {
                 body[k] = k === 'game' && v ? games.toPublic(v, req.me?.tgId, req.adminUnlocked, { withLog: true }) : v;

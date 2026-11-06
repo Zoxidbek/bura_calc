@@ -1,7 +1,12 @@
 // Bot xabarlari matnlari (Telegram HTML rejimi)
 import { escapeHtml as h, formatWhen, percent, teamLabel, formatDuration, minutesBetween } from './util.js';
+import { banInfo, suggestDelete } from './services/users.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
+
+export function nameOfUser(u) {
+    return nameOf(u);
+}
 
 function nameOf(u) {
     const full = `${u.firstName || ''} ${u.lastName || ''}`.trim();
@@ -113,6 +118,7 @@ export function adminStats({ users, games, top }) {
         `🔔 Botni ishga tushirgan: <b>${users.messageable}</b>`,
         `🟢 So'nggi 24 soatda faol: <b>${users.activeDay}</b>`,
         `🃏 Kamida 1 marta o'ynagan: <b>${users.players}</b>`,
+        `⛔ Hozir bloklangan: <b>${users.banned || 0}</b>`,
         '',
         `🎮 Jami o'yinlar: <b>${games.total}</b>`,
         `🔴 Jonli: <b>${games.live}</b> · 🏁 Tugagan: <b>${games.finished}</b> · ❌ Bekor: <b>${games.cancelled}</b>`,
@@ -127,26 +133,53 @@ export function adminStats({ users, games, top }) {
     return lines.join('\n');
 }
 
-export function userCard(u, rank) {
+export function userCard(u, rank, { isAdmin = false } = {}) {
+    const ban = banInfo(u);
     return [
-        `👤 <b>${h(nameOf(u))}</b>${u.username ? ` (@${h(u.username)})` : ''}`,
+        `👤 <b>${h(nameOf(u))}</b>${u.username ? ` (@${h(u.username)})` : ''}${isAdmin ? ' 👑' : ''}`,
         `🆔 <code>${u.tgId}</code>`,
         u.canMessage ? '🔔 Botni ishga tushirgan — natijalar unga boradi' : '🔕 Botni ishga tushirmagan — xabar bormaydi',
+        ban ? `⛔ <b>Bloklangan: ${h(formatWhen(ban.until))} gacha</b>${ban.reason ? `\n    Sabab: ${h(ban.reason)}` : ''}` : null,
         '',
         statsBlock(u, rank),
         '',
         `🕒 Oxirgi faollik: ${h(formatWhen(u.lastSeenAt))}`,
-        `📅 Ro'yxatdan o'tgan: ${h(formatWhen(u.createdAt))}`
-    ].join('\n');
+        `📅 Ro'yxatdan o'tgan: ${h(formatWhen(u.createdAt))}`,
+        !isAdmin && suggestDelete(u) ? "\n💡 30 kundan beri kirmagan va o'ynamagan — o'chirish tavsiya etiladi." : null
+    ].filter(v => v !== null).join('\n');
 }
 
-export function usersPage(items, { page, pages, total, perPage }) {
-    const lines = [`👥 <b>Foydalanuvchilar</b> — ${total} ta · ${page + 1}/${Math.max(1, pages)}-sahifa`, ''];
+export function bannedNotice(ban) {
+    return [
+        '⛔ <b>Siz vaqtincha bloklangansiz</b>',
+        `⏱ ${h(formatWhen(ban.until))} gacha`,
+        ban.reason ? `Sabab: ${h(ban.reason)}` : null
+    ].filter(Boolean).join('\n');
+}
+
+export function banApplied(ban) {
+    return [
+        '⛔ <b>Admin sizni vaqtincha blokladi</b>',
+        `⏱ ${h(formatWhen(ban.until))} gacha botdan va o'yinlardan foydalana olmaysiz.`,
+        ban.reason ? `Sabab: ${h(ban.reason)}` : null
+    ].filter(Boolean).join('\n');
+}
+
+export function unbanApplied() {
+    return "✅ <b>Siz blokdan chiqarildingiz</b> — botdan va o'yinlardan yana foydalanishingiz mumkin.";
+}
+
+const USER_FILTERS = { all: '', b: ' · ⛔ bloklanganlar', s: " · 💡 o'chirish tavsiyasi" };
+
+export function usersPage(items, { page, pages, total, perPage, filter = 'all' }) {
+    const lines = [`👥 <b>Foydalanuvchilar</b>${USER_FILTERS[filter] || ''} — ${total} ta · ${page + 1}/${Math.max(1, pages)}-sahifa`, ''];
     items.forEach((u, i) => {
         const s = u.stats || {};
-        lines.push(`${page * perPage + i + 1}. ${h(nameOf(u))}${u.username ? ` @${h(u.username)}` : ''} — 🎮${s.games || 0} 🏆${s.wins || 0} ${u.canMessage ? '🔔' : '🔕'}`);
+        const ban = banInfo(u);
+        lines.push(`${page * perPage + i + 1}. ${h(nameOf(u))}${u.username ? ` @${h(u.username)}` : ''} — 🎮${s.games || 0} 🏆${s.wins || 0} ${u.canMessage ? '🔔' : '🔕'}${ban ? ` ⛔ ${h(formatWhen(ban.until))} gacha` : ''}`);
     });
-    if (!items.length) lines.push("Hali foydalanuvchilar yo'q.");
+    if (!items.length) lines.push(filter === 's' ? "O'chirish tavsiya etiladigan user yo'q 👍" : filter === 'b' ? "Bloklangan user yo'q." : "Hali foydalanuvchilar yo'q.");
+    if (filter === 's' && items.length) lines.push('', "💡 Bular 30 kundan beri kirmagan va bitta ham o'yin o'ynamagan.");
     return lines.join('\n');
 }
 

@@ -41,6 +41,7 @@ export function createGameService({ db, users }) {
                 if (m?.tgId) {
                     const u = known.get(Number(m.tgId));
                     if (!u) throw new HttpError(400, "O'yinchi topilmadi — u botni ochgan bo'lishi kerak");
+                    if (users.banInfo(u)) throw new HttpError(400, `${userName(u)} vaqtincha bloklangan — o'yinga qo'shib bo'lmaydi`);
                     return { tgId: u.tgId, name: userName(u), username: u.username || null, photo: u.photoUrl || null };
                 }
                 const name = cleanName(m?.name);
