@@ -16,7 +16,8 @@ esa har bir o'yinchiga bot orqali keladi. O'yin qoidalari asl kalkulyator bilan 
 - **Kozir butun ekranda:** o'yin paytida «⛶ Butun ekranda» — kozir kartasi butun ekranni egallaydi
   (telefonni stol o'rtasiga qo'yish uchun). Hajmi: slayder, −/+ yoki ikki barmoq bilan; ikki marta
   bosish — 100% ↔ oldingi hajm; bir marta bosish — tugmalar yashiriladi. Ishtirokchi kozirni shu
-  yerning o'zidan almashtira oladi; tanlangan hajm eslab qolinadi; ekran o'chib qolmaydi.
+  yerning o'zidan almashtira oladi; tanlangan hajm eslab qolinadi; telefon ruxsat bersa, ekran o'chib
+  qolmaydi (Telegram'da buning alohida funksiyasi yo'q — ba'zi Android telefonlarda ekran o'z vaqtida o'chadi).
 - Reyting (chempionliklar → g'alaba foizi → o'yinlar soni) va shaxsiy statistika.
 
 **Bot:**
