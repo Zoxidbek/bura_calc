@@ -28,6 +28,9 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
     if (res.status === 204) return null;
     let data = null;
     try { data = await res.json(); } catch { data = null; }
+    if (res.status === 403 && data?.code === 'banned') {
+        window.dispatchEvent(new CustomEvent('bura:banned', { detail: data }));
+    }
     if (!res.ok) throw new ApiError(res.status, data);
     return data;
 }

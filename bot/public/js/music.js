@@ -504,6 +504,14 @@ function startTicking() {
     if (!player.raf) player.raf = requestAnimationFrame(tick);
 }
 
+const errorListeners = new Set();
+
+/** Yuklangan qo'shiq ochilmasa chaqiriladi (o'rniga standart musiqa chalinadi). */
+export function onMusicError(fn) {
+    errorListeners.add(fn);
+    return () => errorListeners.delete(fn);
+}
+
 export function onMusic(fn) {
     player.listeners.add(fn);
     return () => player.listeners.delete(fn);
@@ -540,6 +548,8 @@ export function prepareTrack(track) {
             a.dataset.src = player.track.url;
             a.addEventListener('ended', () => { player.status = 'ended'; emit(); });
             a.addEventListener('error', () => {
+                console.warn('[music] fayl ochilmadi:', a.error?.code, a.src);
+                errorListeners.forEach(fn => { try { fn(a.error); } catch { /* jim */ } });
                 if (player.track?.type === 'file' && player.status === 'playing') {
                     // fayl ochilmasa — standart musiqaga o'tamiz
                     player.status = 'idle';

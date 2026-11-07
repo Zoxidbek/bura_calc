@@ -13,6 +13,10 @@ esa har bir o'yinchiga bot orqali keladi. O'yin qoidalari asl kalkulyator bilan 
 - **Jonli o'yinlar** hammaga ko'rinadi; boshqa telefonlarda 2–3 soniyada yangilanadi.
   Ochkoni o'yinni ochgan odam va ishtirokchilar o'zgartiradi, qolganlar kuzatadi.
 - Tugagan o'yinlar tarixi, «Shu o'yinchilar bilan qayta» tugmasi, harakatlar tarixi.
+- **Kozir butun ekranda:** o'yin paytida «⛶ Butun ekranda» — kozir kartasi butun ekranni egallaydi
+  (telefonni stol o'rtasiga qo'yish uchun). Hajmi: slayder, −/+ yoki ikki barmoq bilan; ikki marta
+  bosish — 100% ↔ oldingi hajm; bir marta bosish — tugmalar yashiriladi. Ishtirokchi kozirni shu
+  yerning o'zidan almashtira oladi; tanlangan hajm eslab qolinadi; ekran o'chib qolmaydi.
 - Reyting (chempionliklar → g'alaba foizi → o'yinlar soni) va shaxsiy statistika.
 
 **Bot:**
@@ -25,6 +29,11 @@ esa har bir o'yinchiga bot orqali keladi. O'yin qoidalari asl kalkulyator bilan 
 - **Musiqa qo'shish — Mini App'siz:** botga audio fayl yuborasiz → bot darhol **qaysi soniyadan
   boshlansin** deb so'raydi (`45`, `1:05`, `1 daqiqa 5 soniya` yoki «Boshidan») — g'olib ekranida
   musiqa aynan shu joyidan chalinadi. Keyin: «Faol qilish», «Tinglash», «Boshlanish vaqti», «Nomi», «O'chirish».
+- **Userlarni boshqarish** (botda ham, Mini App'da ham): **vaqtincha bloklash** (1 soat … 30 kun yoki
+  istalgan muddat + sabab), **muddatidan oldin blokdan chiqarish**, **o'chirish** (tasdiq bilan).
+  30 kundan beri kirmagan va o'ynamagan userlar «💡 O'chirish tavsiyasi» ro'yxatida chiqadi.
+  Bloklangan user botdan ham, Mini App'dan ham foydalana olmaydi, sababini ko'radi va yangi
+  o'yinlarga qo'shilmaydi; bloklanganda va ochilganda unga xabar boradi.
 - Mini App'dagi Admin bo'limi: umumiy statistika, barcha foydalanuvchilar, o'yinlarni bekor
   qilish/o'chirish, g'olib musiqasini tanlash. Kod bir marta kiritilsa, bot va Mini App'da
   `ADMIN_SESSION_HOURS` soat ochiq turadi.

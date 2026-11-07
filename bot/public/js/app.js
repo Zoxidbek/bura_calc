@@ -2,7 +2,8 @@
 import { tg, setupTelegram, haptic, setBack, setClosingConfirmation, openTelegramLink, requestWriteAccess } from './tg.js';
 import { api } from './api.js';
 import { h, avatar, teamName, when, ago, duration, emptyState, loading, toast, confirmDialog, promptDialog, openSheet, closeSheet } from './ui.js';
-import { onMusic, unlockAudio, prepareTrack, playWinnerMusic, replayWinnerMusic, stopWinnerMusic, toggleMute } from './music.js';
+import { onMusic, onMusicError, unlockAudio, prepareTrack, playWinnerMusic, replayWinnerMusic, stopWinnerMusic, toggleMute } from './music.js';
+import { openKozir, closeKozir, updateKozir } from './kozir.js';
 import { startCelebration, stopCelebration } from './celebrate.js';
 import { applyScore, SUITS, MIN_TEAMS, MAX_TEAMS } from '/shared/rules.js';
 
@@ -15,6 +16,7 @@ const SUIT = {
     diamonds: { sym: '♦', name: "G'isht", color: 'red' }
 };
 const MEDALS = ['🥇', '🥈', '🥉'];
+const BAN_PRESETS = [[60, '1 soat'], [360, '6 soat'], [1440, '1 kun'], [4320, '3 kun'], [10080, '7 kun'], [43200, '30 kun']];
 const BUILTIN = { type: 'builtin', title: "G'olib qahramon kelmoqda", performer: 'Handel · See, the Conquering Hero Comes!' };
 
 const S = {
@@ -22,7 +24,8 @@ const S = {
     track: null,
     view: null, tab: 'games', adminTab: 'overview',
     feed: null, loadToken: 0,
-    admin: { usersQ: '', usersSkip: 0, users: [], usersTotal: 0, gamesStatus: '' },
+    admin: { usersQ: '', usersKind: 'all', usersSkip: 0, users: [], usersTotal: 0, gamesStatus: '', banMinutes: 1440 },
+    banned: null, pollCount: 0,
     builder: null, pickTeam: 0, pickUsers: new Map(),
     game: null, serverVersion: 0, queue: [], sending: false, prevRender: {}, celebrated: null
 };
@@ -104,7 +107,29 @@ async function renderOutside() {
     </div>`);
 }
 
+function renderBanned(info) {
+    S.banned = info;
+    stopPolling();
+    stopCelebration();
+    stopWinnerMusic();
+    closeKozir(true);
+    closeSheet();
+    setBack(null);
+    setClosingConfirmation(false);
+    S.view = 'banned';
+    root.innerHTML = screen(`<div class="container center banned">
+        <div class="empty-icon">⛔</div>
+        <h1>Siz vaqtincha bloklangansiz</h1>
+        <p class="lead">${info.until ? `<b>${h(when(info.until))}</b> gacha botdan va o'yinlardan foydalana olmaysiz.` : h(info.error || '')}</p>
+        ${info.reason ? `<div class="ban-box">Sabab: ${h(info.reason)}</div>` : ''}
+        <button class="more-btn" data-action="reload">Qayta tekshirish</button>
+    </div>`);
+}
+
+window.addEventListener('bura:banned', e => renderBanned(e.detail || {}));
+
 function renderFatal(err) {
+    if (err?.data?.code === 'banned') return renderBanned(err.data);
     root.innerHTML = screen(`<div class="container center">
         <div class="empty-icon">⚠️</div>
         <h1>${err.status === 401 ? 'Sessiya eskirgan' : 'Ulanib bo\'lmadi'}</h1>
@@ -357,13 +382,16 @@ async function loadAdminSub(fresh = () => true) {
                 <span class="rank-num rank-wins">${p.stats.wins}</span><span class="rank-num">${p.stats.games}</span><span class="rank-num rank-pct">${p.stats.rate}%</span></div>`).join('')}</div>` : ''}`;
     } else if (S.adminTab === 'users') {
         S.admin.usersSkip = 0;
-        const d = await api(`/admin/users?limit=30&q=${encodeURIComponent(S.admin.usersQ)}`);
+        const d = await api(`/admin/users?limit=30&kind=${S.admin.usersKind}&q=${encodeURIComponent(S.admin.usersQ)}`);
         if (!fresh() || !el()) return;
+        S.admin.byId = new Map();
         S.admin.users = d.items;
         S.admin.usersTotal = d.total;
+        const kinds = [['all', 'Hammasi'], ['banned', '⛔ Bloklangan'], ['suggest', "💡 O'chirish tavsiyasi"]];
         el().innerHTML = `
             <input id="userSearch" class="search-input" placeholder="Qidirish: ism, @username yoki ID" value="${h(S.admin.usersQ)}" autocomplete="off">
-            <div class="admin-note">Jami: <b>${d.total}</b> ta foydalanuvchi</div>
+            <div class="filter-row">${kinds.map(([id, label]) => `<button class="filter-chip ${S.admin.usersKind === id ? 'active' : ''}" data-action="users-kind" data-kind="${id}">${label}</button>`).join('')}</div>
+            <div class="admin-note">${S.admin.usersKind === 'suggest' ? "30 kundan beri kirmagan va bitta ham o'yin o'ynamaganlar. " : ''}Jami: <b>${d.total}</b> ta · boshqarish uchun userni bosing</div>
             <div id="userList" class="user-list">${usersRows(d.items)}</div>
             ${d.items.length < d.total ? `<button class="more-btn" data-action="more-users">Ko'proq ko'rsatish</button>` : ''}`;
         let t;
@@ -386,12 +414,22 @@ async function loadAdminSub(fresh = () => true) {
     }
 }
 
+function userTags(u) {
+    return [
+        u.isAdmin ? '<span class="tag admin">👑 Admin</span>' : '',
+        u.ban ? `<span class="tag ban">⛔ ${h(when(u.ban.until))} gacha</span>` : '',
+        u.suggestDelete && !u.isAdmin ? "<span class=\"tag sug\">💡 o'chirish tavsiya</span>" : ''
+    ].join('');
+}
+
 function usersRows(items) {
-    return items.map(u => `<div class="user-row">
+    items.forEach(u => S.admin.byId?.set(u.id, u));
+    return items.map(u => `<div class="user-row ${u.ban ? 'banned' : ''}" data-action="admin-user" data-id="${u.id}" role="button" tabindex="0">
         ${avatar(u, 'md')}
         <div class="ur-main">
             <div class="ur-name">${h(u.name)} ${u.canMessage ? '<span title="Botni ochgan — natijalar boradi">🔔</span>' : '<span title="Botni ochmagan">🔕</span>'}</div>
             <div class="ur-sub">${u.username ? '@' + h(u.username) + ' · ' : ''}ID ${u.id} · ${h(ago(u.lastSeenAt))}</div>
+            ${userTags(u) ? `<div class="ur-tags">${userTags(u)}</div>` : ''}
         </div>
         <div class="ur-stats"><b>${u.stats.wins}</b>/${u.stats.games}<small>${u.rank ? `${u.rank}-o'rin` : '—'}</small></div>
     </div>`).join('') || `<div class="empty-mini">Topilmadi</div>`;
@@ -437,6 +475,52 @@ function renderTracks(d) {
         </div>
         <p class="rank-note">Faol musiqa g'olib ekranida chalinadi. ⏱ — qo'shiqni masalan naqoratidan boshlash uchun.</p>`;
     S.admin.tracks = d.items;
+}
+
+function openUserSheet(id) {
+    const u = S.admin.byId.get(id);
+    if (!u) return;
+    const st = u.stats;
+    openSheet(`
+        <div class="sheet-head"><b>Foydalanuvchi</b><button class="sheet-x" data-action="close-sheet" aria-label="Yopish">✕</button></div>
+        <div class="us-head">${avatar(u, 'lg')}
+            <div class="us-main"><div class="us-name">${h(u.name)}</div>
+            <div class="us-sub">${u.username ? '@' + h(u.username) + ' · ' : ''}ID ${u.id}</div></div>
+        </div>
+        ${userTags(u) ? `<div class="ur-tags">${userTags(u)}</div>` : ''}
+        <div class="stat-grid compact">
+            <div class="stat-tile"><div class="stat-val">${st.games}</div><div class="stat-lbl">O'yin</div></div>
+            <div class="stat-tile gold"><div class="stat-val">${st.wins}</div><div class="stat-lbl">G'alaba</div></div>
+            <div class="stat-tile"><div class="stat-val">${st.losses}</div><div class="stat-lbl">Mag'lubiyat</div></div>
+            <div class="stat-tile"><div class="stat-val">${u.rank ? u.rank : '—'}</div><div class="stat-lbl">O'rin</div></div>
+        </div>
+        <p class="us-meta">${u.canMessage ? '🔔 Botni ochgan — natijalar boradi' : '🔕 Botni ochmagan'} · oxirgi faollik: ${h(ago(u.lastSeenAt))}</p>
+        ${u.ban ? `<div class="ban-box">⛔ <b>Bloklangan: ${h(when(u.ban.until))} gacha</b>${u.ban.reason ? `<br>Sabab: ${h(u.ban.reason)}` : ''}</div>` : ''}
+        ${u.suggestDelete && !u.isAdmin ? `<div class="notice sug"><span>💡 30 kundan beri kirmagan va bitta ham o'yin o'ynamagan — o'chirish tavsiya etiladi.</span></div>` : ''}
+        ${u.isAdmin ? `<p class="admin-note">👑 Admin — bloklab yoki o'chirib bo'lmaydi.</p>` : `
+        <div class="us-actions">
+            ${u.ban
+                ? `<button class="start-btn" data-action="user-unban" data-id="${u.id}">✅ Blokdan chiqarish</button>
+                   <button class="more-btn inline" data-action="user-ban-form" data-id="${u.id}">⏱ Muddatni o'zgartirish</button>`
+                : `<button class="ban-btn" data-action="user-ban-form" data-id="${u.id}">⛔ Vaqtincha bloklash</button>`}
+            <button class="danger-mini" data-action="user-delete" data-id="${u.id}">🗑 O'chirish</button>
+        </div>`}`);
+}
+
+function openBanForm(id) {
+    const u = S.admin.byId.get(id);
+    if (!u) return;
+    openSheet(`
+        <div class="sheet-head"><b>⛔ ${h(u.name)} — vaqtincha bloklash</b><button class="sheet-x" data-action="close-sheet" aria-label="Yopish">✕</button></div>
+        <p class="admin-note">Bloklangan user botdan ham, Mini App'dan ham foydalana olmaydi va yangi o'yinlarga qo'shilmaydi. Muddat tugagach blok o'zi ochiladi.</p>
+        <div class="filter-row">${BAN_PRESETS.map(([min, label]) => `<button class="filter-chip ${S.admin.banMinutes === min ? 'active' : ''}" data-action="ban-preset" data-min="${min}">${label}</button>`).join('')}</div>
+        <div class="ban-custom">
+            <span>yoki</span>
+            <input id="banNum" type="number" min="1" max="999" inputmode="numeric" placeholder="son">
+            <select id="banUnit"><option value="60">soat</option><option value="1440">kun</option><option value="10080">hafta</option><option value="1">daqiqa</option></select>
+        </div>
+        <input id="banReason" class="search-input" maxlength="200" placeholder="Sabab (ixtiyoriy) — userga ko'rsatiladi" autocomplete="off">
+        <button class="ban-btn wide" data-action="ban-submit" data-id="${u.id}">⛔ Bloklash</button>`);
 }
 
 // ---------------------------------------------------------------- yangi o'yin
@@ -538,6 +622,7 @@ async function loadPickList(q) {
 
 // ---------------------------------------------------------------- o'yin
 function leaveGame() {
+    closeKozir(true);
     stopPolling();
     stopCelebration();
     stopWinnerMusic();
@@ -589,6 +674,7 @@ function suitBarHtml(g) {
             </button>`).join('')}
         </div>
         <div id="suitLabel" class="suit-label"></div>
+        <button id="suitExpand" class="suit-expand" data-action="kozir-full" aria-label="Kozirni butun ekranda ko'rsatish">⛶ Butun ekranda</button>
     </div>`;
 }
 
@@ -609,6 +695,18 @@ function updateSuitBar() {
         label.classList.toggle('active', !!sel);
         label.classList.toggle('red', sel === 'hearts' || sel === 'diamonds');
     }
+    const expand = document.getElementById('suitExpand');
+    if (expand) expand.hidden = !sel && !(g.canEdit && g.status === 'live');
+    updateKozir({ suit: sel, editable: g.canEdit && g.status === 'live' });
+}
+
+/** Kozirni o'rnatadi (to'liq ekran rejimidan tanlanganda — o'chirib qo'ymaydi). */
+function setGameSuit(s) {
+    const g = S.game;
+    if (!g || !g.canEdit || g.status !== 'live' || g.suit === s) return;
+    g.suit = s;
+    updateSuitBar();
+    enqueue({ type: 'suit', suit: s });
 }
 
 function teamCardHtml(g, t, i) {
@@ -739,8 +837,19 @@ async function flush() {
     S.sending = false;
 }
 
+async function refreshMusic() {
+    try {
+        const r = await api('/music/active');
+        if (r?.music && (r.music.id !== S.track?.id || r.music.startAt !== S.track?.startAt || r.music.url !== S.track?.url)) {
+            S.track = r.music;
+            prepareTrack(S.track);
+        }
+    } catch { /* keyingi safar */ }
+}
+
 async function pollGame() {
     const g = S.game;
+    if (++S.pollCount % 12 === 0) refreshMusic();
     if (!g || S.sending || S.queue.length) return;
     try {
         const res = await api(`/games/${g.id}?since=${S.serverVersion}`);
@@ -750,6 +859,7 @@ async function pollGame() {
 
 // ---------------------------------------------------------------- g'olib
 function showWinner({ celebrate }) {
+    closeKozir(true);
     stopPolling();
     setClosingConfirmation(false);
     S.view = 'winner';
@@ -986,7 +1096,7 @@ const ACTIONS = {
     'more-users': async el => {
         el.disabled = true;
         try {
-            const d = await api(`/admin/users?limit=30&skip=${S.admin.users.length}&q=${encodeURIComponent(S.admin.usersQ)}`);
+            const d = await api(`/admin/users?limit=30&kind=${S.admin.usersKind}&skip=${S.admin.users.length}&q=${encodeURIComponent(S.admin.usersQ)}`);
             S.admin.users.push(...d.items);
             document.getElementById('userList').innerHTML = usersRows(S.admin.users);
             if (S.admin.users.length >= d.total) el.remove();
@@ -995,6 +1105,75 @@ const ACTIONS = {
             toast(err.message, 'error');
             el.disabled = false;
         }
+    },
+    'kozir-full': () => {
+        const g = S.game;
+        if (!g) return;
+        openKozir({
+            suit: g.suit,
+            editable: g.canEdit && g.status === 'live',
+            onPick: s => setGameSuit(s),
+            onClose: () => setBack(() => goHome())
+        });
+    },
+    'users-kind': el => {
+        S.admin.usersKind = el.dataset.kind;
+        loadAdmin();
+    },
+    'admin-user': el => openUserSheet(Number(el.dataset.id)),
+    'user-ban-form': el => openBanForm(Number(el.dataset.id)),
+    'ban-preset': el => {
+        S.admin.banMinutes = Number(el.dataset.min);
+        document.querySelectorAll('[data-action="ban-preset"]').forEach(b => b.classList.toggle('active', b === el));
+        const num = document.getElementById('banNum');
+        if (num) num.value = '';
+    },
+    'ban-submit': async el => {
+        const id = Number(el.dataset.id);
+        const num = parseInt(document.getElementById('banNum')?.value, 10);
+        const unit = Number(document.getElementById('banUnit')?.value || 60);
+        const minutes = num > 0 ? Math.min(525600, num * unit) : S.admin.banMinutes;
+        const reason = document.getElementById('banReason')?.value.trim() || undefined;
+        el.disabled = true;
+        try {
+            const { user } = await api(`/admin/users/${id}/ban`, { method: 'POST', body: { minutes, ...(reason ? { reason } : {}) } });
+            haptic('success');
+            toast(`⛔ ${user.name}: ${when(user.ban.until)} gacha bloklandi`);
+            closeSheet();
+            loadAdmin();
+        } catch (err) {
+            toast(err.message, 'error');
+            el.disabled = false;
+        }
+    },
+    'user-unban': async el => {
+        el.disabled = true;
+        try {
+            const { user } = await api(`/admin/users/${Number(el.dataset.id)}/unban`, { method: 'POST' });
+            haptic('success');
+            toast(`✅ ${user.name} blokdan chiqarildi`);
+            closeSheet();
+            loadAdmin();
+        } catch (err) {
+            toast(err.message, 'error');
+            el.disabled = false;
+        }
+    },
+    'user-delete': async el => {
+        const u = S.admin.byId.get(Number(el.dataset.id));
+        if (!u) return;
+        closeSheet();
+        const ok = await confirmDialog({
+            title: `${u.name} o'chirilsinmi?`,
+            text: `Statistikasi (${u.stats.games} o'yin) o'chadi, o'yinlar tarixida ismi qoladi. Botga qayta kirsa — yangi user bo'lib yoziladi.`,
+            ok: "O'chirish"
+        });
+        if (!ok) return;
+        try {
+            await api(`/admin/users/${u.id}`, { method: 'DELETE' });
+            toast(`🗑 ${u.name} o'chirildi`);
+            loadAdmin();
+        } catch (err) { toast(err.message, 'error'); }
     },
     'games-filter': el => {
         S.admin.gamesStatus = el.dataset.status;
@@ -1070,6 +1249,7 @@ const ACTIONS = {
 };
 
 document.addEventListener('click', e => {
+    if (S.me) unlockAudio();
     const el = e.target.closest('[data-action]');
     if (!el || el.disabled) return;
     const fn = ACTIONS[el.dataset.action];
@@ -1087,7 +1267,11 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && S.view === 'game') pollGame();
+    if (document.visibilityState !== 'visible' || !S.me || S.banned) return;
+    refreshMusic();               // admin botda boshqa qo'shiqni tanlagan bo'lishi mumkin
+    if (S.view === 'game') pollGame();
 });
+
+onMusicError(() => toast("Yuklangan qo'shiqni ochib bo'lmadi — standart musiqa chalindi", 'warn'));
 
 boot();
