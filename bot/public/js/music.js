@@ -662,3 +662,61 @@ export function toggleMute() {
 export function previewTrack(track) {
     playWinnerMusic(track);
 }
+
+export function isMuted() {
+    return player.muted;
+}
+
+/**
+ * «Kim yuradi?» uchun qisqa ovozlar: 'tick' — baraban chiqillashi, 'blip' — tez tanlovda ism almashishi,
+ * 'win' — natija. G'olib musiqasi bilan bitta ovoz tugmasi (🔇 bo'lsa — jim).
+ */
+export function playSfx(kind) {
+    if (player.muted) return;
+    const ctx = getAudioCtx();
+    if (!ctx || ctx.state !== 'running') return;
+    const t = ctx.currentTime + 0.005;
+    const out = ctx.createGain();
+    out.connect(ctx.destination);
+    if (kind === 'tick') {
+        const src = ctx.createBufferSource();
+        src.buffer = getNoise(ctx);
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 2500 + Math.random() * 600;
+        bp.Q.value = 2.2;
+        out.gain.setValueAtTime(0.0001, t);
+        out.gain.exponentialRampToValueAtTime(0.6, t + 0.002);
+        out.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+        src.connect(bp);
+        bp.connect(out);
+        src.start(t, Math.random() * 2, 0.05);
+    } else if (kind === 'blip') {
+        const o = ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(1046.5, t);
+        o.frequency.exponentialRampToValueAtTime(1568, t + 0.04);
+        out.gain.setValueAtTime(0.0001, t);
+        out.gain.exponentialRampToValueAtTime(0.12, t + 0.005);
+        out.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+        o.connect(out);
+        o.start(t);
+        o.stop(t + 0.08);
+    } else if (kind === 'win') {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'triangle';
+            o.frequency.value = f;
+            const s = t + i * 0.085;
+            g.gain.setValueAtTime(0.0001, s);
+            g.gain.exponentialRampToValueAtTime(0.17, s + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, s + 0.6);
+            o.connect(g);
+            g.connect(out);
+            o.start(s);
+            o.stop(s + 0.65);
+        });
+    }
+    setTimeout(() => { try { out.disconnect(); } catch { /* allaqachon */ } }, 1500);
+}

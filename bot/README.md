@@ -18,6 +18,12 @@ esa har bir o'yinchiga bot orqali keladi. O'yin qoidalari asl kalkulyator bilan 
   bosish — 100% ↔ oldingi hajm; bir marta bosish — tugmalar yashiriladi. Ishtirokchi kozirni shu
   yerning o'zidan almashtira oladi; tanlangan hajm eslab qolinadi; telefon ruxsat bersa, ekran o'chib
   qolmaydi (Telegram'da buning alohida funksiyasi yo'q — ba'zi Android telefonlarda ekran o'z vaqtida o'chadi).
+- **Kim yuradi?** — o'yin ekranida ikki usul: «⚡ Kim yuradi?» bir bosishda tasodifiy aniqlaydi;
+  «🎡 Baraban» — rangli barabanni tugma yoki barmoq bilan aylantirasiz, u chiqillab sekinlashadi va
+  bitta komandada to'xtaydi. Tanlovni server qiladi, shuning uchun natija o'yindagi hamma telefonlarda
+  bir xil chiqadi (kuzatuvchilarda ham baraban aylanadi). O'sha komanda kartasida «🎲 Yuradi» belgisi
+  turadi, har bir tanlov harakatlar tarixiga yoziladi. Faqat chiqib ketmagan komandalar orasidan
+  tanlanadi; navbatdagi ochkodan keyin belgi o'chadi (yangi qo'l — yangi tanlov).
 - Reyting (chempionliklar → g'alaba foizi → o'yinlar soni) va shaxsiy statistika.
 
 **Bot:**

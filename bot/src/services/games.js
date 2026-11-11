@@ -1,8 +1,10 @@
+import { randomInt } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { applyScore, MIN_TEAMS, MAX_TEAMS, STEP, SUITS } from '../../shared/rules.js';
 import { HttpError, cleanName, userName } from '../util.js';
 
 const LOG_LIMIT = 300;
+export const TURN_MODES = ['quick', 'wheel'];   // bir bosishda | baraban
 const LIVE_FRESH_MS = 12 * 3600 * 1000;     // 12 soatdan beri tegilmagan o'yin umumiy "jonli" ro'yxatda ko'rinmaydi
 
 export function toObjectId(id, what = "O'yin") {
@@ -153,6 +155,45 @@ export function createGameService({ db, users }) {
         return updated;
     }
 
+    /**
+     * Kim yuradi: chiqib ketmagan komandalardan biri tasodifiy tanlanadi. Tanlovni server qiladi —
+     * shuning uchun hamma telefonda natija bir xil va uni "qayta-qayta bosib" yashirincha o'zgartirib bo'lmaydi
+     * (har bir tanlov harakatlar tarixiga yoziladi). sum — tanlov paytidagi ochkolar yig'indisi:
+     * keyingi ochko o'zgarishida natija eskiradi (yangi qo'l — yangi tanlov).
+     */
+    async function pickTurn({ id, mode, actor, adminUnlocked = false }) {
+        if (!TURN_MODES.includes(mode)) throw new HttpError(400, "Tanlash usuli noto'g'ri");
+        for (let attempt = 0; attempt < 3; attempt++) {
+            const game = await get(id);
+            if (game.status !== 'live') {
+                throw new HttpError(409, game.status === 'cancelled' ? "O'yin bekor qilingan" : "O'yin allaqachon tugagan", { game });
+            }
+            if (!canEdit(game, actor.tgId, adminUnlocked)) throw new HttpError(403, "Kim yurishini faqat o'yin ishtirokchilari aniqlay oladi");
+            const candidates = game.teams.flatMap((t, i) => (t.eliminated ? [] : [i]));
+            if (candidates.length < 2) throw new HttpError(409, 'Tanlash uchun kamida 2 ta komanda kerak', { game });
+
+            const now = new Date();
+            const turn = {
+                team: candidates[randomInt(candidates.length)],
+                mode,
+                seq: (game.turn?.seq || 0) + 1,
+                at: now,
+                by: actor.tgId,
+                byName: userName(actor),
+                sum: game.teams.reduce((s, t) => s + t.score, 0)
+            };
+            const entry = { at: now, by: actor.tgId, byName: turn.byName, kind: 'turn', team: turn.team, mode };
+            const updated = await games.findOneAndUpdate(
+                { _id: game._id, version: game.version, status: 'live' },
+                { $set: { turn, updatedAt: now }, $inc: { version: 1 }, $push: { log: { $each: [entry], $slice: -LOG_LIMIT } } },
+                { returnDocument: 'after' }
+            );
+            if (updated) return updated;
+            // shu orada boshqa telefonda ochko o'zgardi — yangi holat bilan qaytadan tanlaymiz
+        }
+        throw new HttpError(409, "O'yin boshqa qurilmada yangilandi — qayta urinib ko'ring", { game: await games.findOne({ _id: toObjectId(id) }) });
+    }
+
     async function cancel({ id, actor, adminUnlocked = false }) {
         const game = await get(id);
         if (!canCancel(game, actor.tgId, adminUnlocked)) throw new HttpError(403, "O'yinni faqat uni ochgan odam yoki admin bekor qila oladi");
@@ -235,6 +276,9 @@ export function createGameService({ db, users }) {
                 eliminated: t.eliminated
             })),
             suit: game.suit || null,
+            turn: game.turn
+                ? { team: game.turn.team, mode: game.turn.mode, seq: game.turn.seq, at: game.turn.at, byName: game.turn.byName, sum: game.turn.sum }
+                : null,
             winner: game.winner ?? null,
             createdBy: game.createdBy,
             createdAt: game.createdAt,
@@ -243,10 +287,12 @@ export function createGameService({ db, users }) {
             canEdit: canEdit(game, viewerId, adminUnlocked),
             canCancel: canCancel(game, viewerId, adminUnlocked),
             ...(withLog ? {
-                log: (game.log || []).slice(-60).reverse().map(e => ({ at: e.at, byName: e.byName, team: e.team, delta: e.delta, score: e.score }))
+                log: (game.log || []).slice(-60).reverse().map(e => (e.kind === 'turn'
+                    ? { kind: 'turn', at: e.at, byName: e.byName, team: e.team, mode: e.mode }
+                    : { kind: 'score', at: e.at, byName: e.byName, team: e.team, delta: e.delta, score: e.score }))
             } : {})
         };
     }
 
-    return { hooks, canEdit, canCancel, create, get, score, setSuit, cancel, remove, rematch, feed, forPlayer, list, counts, toPublic, applyResultToStats };
+    return { hooks, canEdit, canCancel, create, get, score, setSuit, pickTurn, cancel, remove, rematch, feed, forPlayer, list, counts, toPublic, applyResultToStats };
 }

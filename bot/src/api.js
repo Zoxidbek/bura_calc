@@ -11,6 +11,7 @@ const schemas = {
     createGame: z.object({ teams: z.array(z.object({ members: z.array(member).max(3) })).min(2).max(6) }),
     score: z.object({ team: z.number().int().min(0).max(5), delta: z.union([z.literal(2), z.literal(-2)]), v: z.number().int().positive().optional() }),
     suit: z.object({ suit: z.enum(['clubs', 'hearts', 'spades', 'diamonds']).nullable() }),
+    turn: z.object({ mode: z.enum(['quick', 'wheel']) }),
     code: z.object({ code: z.string().max(200) }),
     trackPatch: z.object({ title: z.string().trim().min(1).max(80).optional(), startAt: z.number().int().min(0).max(36000).optional() }),
     ban: z.object({ minutes: z.number().int().min(1).max(525600), reason: z.string().trim().max(200).optional() }),
@@ -132,6 +133,13 @@ export function createApi({ services, adminGuard, config, getBotInfo }) {
     r.post('/games/:id/suit', async (req, res) => {
         const { suit } = schemas.suit.parse(req.body);
         const game = await games.setSuit({ id: req.params.id, suit, actor: req.me, adminUnlocked: req.adminUnlocked });
+        res.json({ game: full(req, game) });
+    });
+
+    // Kim yuradi — server tasodifiy tanlaydi (mode: quick — bir bosishda, wheel — baraban)
+    r.post('/games/:id/turn', async (req, res) => {
+        const { mode } = schemas.turn.parse(req.body);
+        const game = await games.pickTurn({ id: req.params.id, mode, actor: req.me, adminUnlocked: req.adminUnlocked });
         res.json({ game: full(req, game) });
     });
 

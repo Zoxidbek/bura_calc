@@ -3,7 +3,8 @@ import { tg, setupTelegram, haptic, setBack, setClosingConfirmation, openTelegra
 import { api } from './api.js';
 import { h, avatar, teamName, when, ago, duration, emptyState, loading, toast, confirmDialog, promptDialog, openSheet, closeSheet } from './ui.js';
 import { onMusic, onMusicError, unlockAudio, prepareTrack, playWinnerMusic, replayWinnerMusic, stopWinnerMusic, toggleMute } from './music.js';
-import { openKozir, closeKozir, updateKozir } from './kozir.js';
+import { openKozir, closeKozir, updateKozir, isKozirOpen } from './kozir.js';
+import { openTurn, closeTurn, isTurnOpen, isTurnBusy, teamColor } from './turn.js';
 import { startCelebration, stopCelebration } from './celebrate.js';
 import { applyScore, SUITS, MIN_TEAMS, MAX_TEAMS } from '/shared/rules.js';
 
@@ -27,7 +28,8 @@ const S = {
     admin: { usersQ: '', usersKind: 'all', usersSkip: 0, users: [], usersTotal: 0, gamesStatus: '', banMinutes: 1440 },
     banned: null, pollCount: 0,
     builder: null, pickTeam: 0, pickUsers: new Map(),
-    game: null, serverVersion: 0, queue: [], sending: false, prevRender: {}, celebrated: null
+    game: null, serverVersion: 0, queue: [], sending: false, prevRender: {}, celebrated: null,
+    ownTurnSeq: null                     // shu telefonda aniqlangan oxirgi «kim yuradi» (uni qayta ko'rsatmaslik uchun)
 };
 
 // ---------------------------------------------------------------- umumiy
@@ -623,12 +625,15 @@ async function loadPickList(q) {
 // ---------------------------------------------------------------- o'yin
 function leaveGame() {
     closeKozir(true);
+    closeTurn(true);
     stopPolling();
     stopCelebration();
     stopWinnerMusic();
     setClosingConfirmation(false);
     S.game = null;
+    const dropped = S.queue;
     S.queue = [];
+    dropped.forEach(op => op.reject?.(new Error("O'yindan chiqildi")));
 }
 
 async function openGame(id, initial = null) {
@@ -700,6 +705,87 @@ function updateSuitBar() {
     updateKozir({ suit: sel, editable: g.canEdit && g.status === 'live' });
 }
 
+// ---------------------------------------------------------------- kim yuradi
+function turnCands(g) {
+    return g.teams.flatMap((t, i) => (t.eliminated ? [] : [i]));
+}
+
+function scoreSum(g) {
+    return g.teams.reduce((s, t) => s + t.score, 0);
+}
+
+/** Oxirgi tanlov hali dolzarbmi: shundan keyin ochko o'zgarmagan bo'lsa (yangi qo'l — yangi tanlov). */
+function freshTurn(g) {
+    const t = g?.turn;
+    if (!t || g.status !== 'live' || t.sum !== scoreSum(g) || !g.teams[t.team] || g.teams[t.team].eliminated) return null;
+    return t;
+}
+
+function updateTurnBar() {
+    const box = document.getElementById('turnBar');
+    const g = S.game;
+    if (!box || !g) return;
+    const editable = g.canEdit && g.status === 'live';
+    const t = freshTurn(g);
+    const result = t ? `<div class="turn-result" style="--c:${teamColor(t.team)}">
+            <span class="tr-dot" aria-hidden="true"></span>
+            <span class="tr-main">
+                <span class="tr-text"><span class="tr-ico" aria-hidden="true">🎲 </span><b>${h(teamName(g.teams[t.team]))}</b> yuradi</span>
+                <span class="tr-by">${h(t.byName)} · ${t.mode === 'wheel' ? '🎡 baraban' : '⚡ bir bosishda'}</span>
+            </span>
+        </div>` : '';
+    if (t && editable) {
+        // natija bor — bitta qatorda: natija + qayta aniqlash tugmachalari (ochko kartalari yuqoriroq turadi)
+        box.innerHTML = `<div class="turn-row">${result}
+            <button class="turn-icon" data-action="turn-quick" aria-label="Qayta aniqlash — bir bosishda" title="Qayta aniqlash — bir bosishda">⚡</button>
+            <button class="turn-icon wheel" data-action="turn-wheel" aria-label="Barabanni aylantirish" title="Baraban">🎡</button>
+        </div>`;
+    } else if (editable) {
+        box.innerHTML = `<div class="turn-btns">
+            <button class="turn-btn" data-action="turn-quick"><span class="tb-ico" aria-hidden="true">⚡</span><span class="tb-txt"><b>Kim yuradi?</b><small>bir bosishda</small></span></button>
+            <button class="turn-btn wheel" data-action="turn-wheel"><span class="tb-ico" aria-hidden="true">🎡</span><span class="tb-txt"><b>Baraban</b><small>aylantirib aniqlash</small></span></button>
+        </div>`;
+    } else {
+        box.innerHTML = result;                 // kuzatuvchi: faqat natija
+    }
+    box.hidden = !box.innerHTML;
+}
+
+/** Tanlov so'rovi navbat orqali ketadi — ochko bosishlari bilan aralashib ketmasligi (409) uchun. */
+function requestTurn(mode) {
+    return new Promise((resolve, reject) => enqueue({ type: 'turn', mode, resolve, reject })).then(game => game.turn);
+}
+
+function restoreBack() {
+    if (S.view !== 'game') return;
+    if (isKozirOpen()) setBack(() => closeKozir());
+    else setBack(() => goHome());
+}
+
+function startTurn(mode) {
+    const g = S.game;
+    if (!g || !g.canEdit || g.status !== 'live') return;
+    closeSheet();
+    openTurn({
+        mode,
+        teams: g.teams,
+        cands: turnCands(g),
+        request: requestTurn,
+        autoStart: mode === 'quick',          // «bir bosishda» — tugmani bosishning o'zi yetadi
+        onClose: restoreBack
+    });
+}
+
+/** Boshqa telefonda aniqlangan natija: shu yerda ham baraban aylanadi / natija chiqadi. */
+function revealRemoteTurn() {
+    const g = S.game;
+    const t = freshTurn(g);
+    if (!t || t.seq === S.ownTurnSeq) return;
+    if (!(Date.now() - Date.parse(t.at) < 45000)) return;     // eski tanlov (telefon uxlab qolgan) — faqat belgida
+    if (isTurnBusy()) return;                                 // o'zimiz aylantiryapmiz
+    openTurn({ spectator: t, teams: g.teams, cands: turnCands(g), onClose: restoreBack });
+}
+
 /** Kozirni o'rnatadi (to'liq ekran rejimidan tanlanganda — o'chirib qo'ymaydi). */
 function setGameSuit(s) {
     const g = S.game;
@@ -723,9 +809,15 @@ function teamCardHtml(g, t, i) {
     }
     S.prevRender[i] = { score: t.score, eliminated: t.eliminated };
     const dis = !g.canEdit || t.eliminated || g.status !== 'live' ? 'disabled' : '';
+    const turnOn = freshTurn(g)?.team === i;
+    if (turnOn) {
+        cls += ' turn-on';
+        style += `;--c:${teamColor(i)}`;
+    }
     return `<div class="team-card${t.eliminated ? ' eliminated' : ''}${cls}" style="${style}">
         <button class="score-btn minus-btn" data-action="score" data-team="${i}" data-delta="-2" ${dis} aria-label="${i + 1}-komanda: minus 2">-</button>
         <div class="team-info">
+            ${turnOn ? '<div class="team-turn">🎲 Yuradi</div>' : ''}
             <div class="team-avatars">${t.members.map(m => avatar(m, 'sm')).join('')}</div>
             <div class="team-name">${h(teamName(t))}</div>
             <div class="team-score ${scoreCls}">${t.score}</div>
@@ -749,6 +841,7 @@ function renderGame() {
             <button class="icon-btn menu-btn" data-action="game-menu" aria-label="O'yin menyusi">⋯</button>
         </div>
         ${suitBarHtml(g)}
+        <div id="turnBar" class="turn-bar" hidden></div>
         <div id="teamsContainer" class="teams-container"></div>
         <div class="game-foot">
             ${viewer && g.status === 'live' ? "<div>👁 Kuzatuvchi rejimi — ochkolarni o'yin ishtirokchilari o'zgartiradi</div>" : ''}
@@ -757,10 +850,12 @@ function renderGame() {
     </div>`);
     renderTeams();
     updateSuitBar();
+    updateTurnBar();
 }
 
 function sameState(a, b) {
     return a.status === b.status && a.suit === b.suit && a.canEdit === b.canEdit &&
+        (a.turn?.seq || 0) === (b.turn?.seq || 0) &&
         a.teams.every((t, i) => t.score === b.teams[i].score && t.eliminated === b.teams[i].eliminated);
 }
 
@@ -770,6 +865,7 @@ function reconcile(server, { force = false } = {}) {
     const local = S.game;
     const same = sameState(local, server);
     const canEditChanged = local.canEdit !== server.canEdit;
+    const turnNew = (server.turn?.seq || 0) > (local.turn?.seq || 0);
     S.serverVersion = server.version;
     S.game = server;
     if (S.view === 'winner') {
@@ -795,13 +891,16 @@ function reconcile(server, { force = false } = {}) {
         toast("O'yin bekor qilindi");
         return;
     }
-    if (canEditChanged) return renderGame();
-    if (!same || force) {
+    if (canEditChanged) {
+        renderGame();
+    } else if (!same || force) {
         renderTeams();
         updateSuitBar();
+        updateTurnBar();
         const st = document.getElementById('gameStatus');
         if (st) st.innerHTML = statusBadge(server);
     }
+    if (turnNew) revealRemoteTurn();
 }
 
 function enqueue(op) {
@@ -818,13 +917,24 @@ async function flush() {
         try {
             const res = op.type === 'score'
                 ? await api(`/games/${id}/score`, { method: 'POST', body: { team: op.team, delta: op.delta, v: S.serverVersion } })
-                : await api(`/games/${id}/suit`, { method: 'POST', body: { suit: op.suit } });
+                : op.type === 'turn'
+                    ? await api(`/games/${id}/turn`, { method: 'POST', body: { mode: op.mode } })
+                    : await api(`/games/${id}/suit`, { method: 'POST', body: { suit: op.suit } });
             S.queue.shift();
             S.serverVersion = res.game.version;
+            if (op.type === 'turn') {
+                S.ownTurnSeq = res.game.turn?.seq ?? null;
+                op.resolve(res.game);
+            }
             if (!S.queue.length) reconcile(res.game);
         } catch (err) {
+            const dropped = S.queue;
             S.queue = [];
-            if (err.data?.game) {
+            dropped.forEach(o => o.reject?.(err));
+            if (op.type === 'turn') {
+                // xato «Kim yuradi?» oynasining o'zida ko'rsatiladi
+                if (err.data?.game) reconcile(err.data.game, { force: true });
+            } else if (err.data?.game) {
                 toast(err.status === 409 ? "O'yin boshqa qurilmada yangilandi — tekshirib, qayta bosing" : err.message, 'warn');
                 reconcile(err.data.game, { force: true });
             } else {
@@ -860,6 +970,7 @@ async function pollGame() {
 // ---------------------------------------------------------------- g'olib
 function showWinner({ celebrate }) {
     closeKozir(true);
+    closeTurn(true);
     stopPolling();
     setClosingConfirmation(false);
     S.view = 'winner';
@@ -1015,8 +1126,11 @@ const ACTIONS = {
             showWinner({ celebrate: true });
         } else {
             renderTeams();
+            updateTurnBar();               // ochko o'zgardi — oldingi «kim yuradi» eskirdi
         }
     },
+    'turn-quick': () => startTurn('quick'),
+    'turn-wheel': () => startTurn('wheel'),
     suit: el => {
         const g = S.game;
         if (!g || !g.canEdit || g.status !== 'live') return;
@@ -1042,8 +1156,10 @@ const ACTIONS = {
     },
     'game-log': () => {
         const g = S.game;
-        const rows = (g.log || []).map(e => `<div class="log-row"><span class="log-time">${h(when(e.at).replace(/^Bugun, /, ''))}</span>
-            <span class="log-main"><b>${h(e.byName)}</b>: ${h(teamName(g.teams[e.team]))} <span class="${e.delta > 0 ? 'plus' : 'minus'}">${e.delta > 0 ? '+' : ''}${e.delta}</span> → ${e.score}</span></div>`).join('');
+        const rows = (g.log || []).map(e => `<div class="log-row${e.kind === 'turn' ? ' turn' : ''}"><span class="log-time">${h(when(e.at).replace(/^Bugun, /, ''))}</span>
+            <span class="log-main"><b>${h(e.byName)}</b>: ${e.kind === 'turn'
+                ? `🎲 ${h(teamName(g.teams[e.team]))} yuradi <span class="log-mode">${e.mode === 'wheel' ? '🎡 baraban' : '⚡ bir bosishda'}</span>`
+                : `${h(teamName(g.teams[e.team]))} <span class="${e.delta > 0 ? 'plus' : 'minus'}">${e.delta > 0 ? '+' : ''}${e.delta}</span> → ${e.score}`}</span></div>`).join('');
         openSheet(`<div class="sheet-head"><b>📜 Harakatlar tarixi</b><button class="sheet-x" data-action="close-sheet" aria-label="Yopish">✕</button></div>
             <div class="log-list">${rows || '<div class="empty-mini">Hali harakat yo\'q</div>'}</div>`);
     },
